@@ -1,0 +1,91 @@
+services:
+  namenode:
+    image: bde2020/hadoop-namenode:2.0.0-hadoop3.2.1-java8
+    container_name: namenode
+    hostname: namenode
+    ports:
+      - "9870:9870"
+      - "8020:8020"
+    environment:
+      - CLUSTER_NAME=hadoop-cluster
+    volumes:
+      - namenode_data:/hadoop/dfs/name
+
+  datanode:
+    image: bde2020/hadoop-datanode:2.0.0-hadoop3.2.1-java8
+    container_name: datanode
+    hostname: datanode
+    depends_on:
+      - namenode
+    environment:
+      - CORE_CONF_fs_defaultFS=hdfs://namenode:8020
+    volumes:
+      - datanode_data:/hadoop/dfs/data
+
+  resourcemanager:
+    image: bde2020/hadoop-resourcemanager:2.0.0-hadoop3.2.1-java8
+    container_name: resourcemanager
+    hostname: resourcemanager
+    depends_on:
+      - namenode
+    ports:
+      - "8088:8088"
+
+  nodemanager:
+    image: bde2020/hadoop-nodemanager:2.0.0-hadoop3.2.1-java8
+    container_name: nodemanager
+    hostname: nodemanager
+    depends_on:
+      - resourcemanager
+    environment:
+      - CORE_CONF_fs_defaultFS=hdfs://namenode:8020
+
+  hive-metastore-db:
+    image: postgres:13
+    container_name: hive-metastore-db
+    hostname: hive-metastore-db
+    environment:
+      POSTGRES_USER: hive
+      POSTGRES_PASSWORD: hive
+      POSTGRES_DB: metastore
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  hive-metastore:
+    image: apache/hive:4.0.0-beta-1
+    container_name: hive-metastore
+    hostname: hive-metastore
+    command: [
+      "--service", "metastore",
+      "--hiveconf", "hive.metastore.uris=thrift://hive-metastore:9083",
+      "--hiveconf", "javax.jdo.option.ConnectionURL=jdbc:postgresql://hive-metastore-db:5432/metastore",
+      "--hiveconf", "javax.jdo.option.ConnectionDriverName=org.postgresql.Driver",
+      "--hiveconf", "javax.jdo.option.ConnectionUserName=hive",
+      "--hiveconf", "javax.jdo.option.ConnectionPassword=hive"
+    ]
+    depends_on:
+      - namenode
+      - hive-metastore-db
+    ports:
+      - "9083:9083"
+
+  hive-server:
+    image: apache/hive:4.0.0-beta-1
+    container_name: hive-server
+    hostname: hive-server
+    command: [
+      "--service", "hiveserver2",
+      "--hiveconf", "hive.metastore.uris=thrift://hive-metastore:9083",
+      "--hiveconf", "hive.server2.thrift.port=10000"
+    ]
+    depends_on:
+      - hive-metastore
+      - resourcemanager
+    ports:
+      - "10000:10000"
+      - "10002:10002"
+
+volumes:
+  namenode_data:
+  datanode_data:
+  postgres_data:

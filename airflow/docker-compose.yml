@@ -1,0 +1,14 @@
+# airflow/docker-compose.yml
+version: '3'
+services:
+  airflow:
+    image: apache/airflow:2.6.3
+    ports:
+      - "8080:8080"
+    volumes:
+      - airflow_dags:/opt/airflow/dags  # Тот же том, что и в Jenkins
+    environment:
+      - AIRFLOW__CORE__EXECUTOR=SequentialExecutor
+
+volumes:
+  airflow_dags:  # Должен называться так же, как в Jenkins

@@ -1,0 +1,17 @@
+# jenkins/docker-compose.yml
+version: '3'
+services:
+  jenkins:
+    image: jenkins/jenkins:lts
+    ports:
+      - "9090:8080"
+    volumes:
+      - jenkins_data:/var/jenkins_home
+      - /var/run/docker.sock:/var/run/docker.sock  # Критично для работы с Docker
+      - airflow_dags:/opt/airflow/dags  # Общий том с Airflow
+    environment:
+      - DOCKER_HOST=unix:///var/run/docker.sock
+
+volumes:
+  jenkins_data:
+  airflow_dags:  # Будет использоваться и в Airflow
