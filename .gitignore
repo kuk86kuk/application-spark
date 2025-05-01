@@ -1,12 +1,12 @@
 ### Project-Specific ###
 # Airflow
-/airflow/dags/*       # Игнорируем папку dags (если нужно оставить структуру, но игнорировать содержимое, используйте `airflow/dags/*`)
+airflow/dags/*       # Игнорируем папку dags (если нужно оставить структуру, но игнорировать содержимое, используйте `airflow/dags/*`)
 
 # Jenkins
-/jenkins/jenkins_home/*      # Вся папка с данными Jenkins (volume)
+jenkins/jenkins_home/*      # Вся папка с данными Jenkins (volume)
 
 # Hadoop
-/hadoop/data/*        # Данные HDFS и другие бинарные файлы Hadoop
+hadoop/data/*        # Данные HDFS и другие бинарные файлы Hadoop
 
 
 ### Common ###
