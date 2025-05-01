@@ -1,0 +1,3 @@
+docker logs airflow-airflow-1 | grep "password" Login with username: admin  password: 9cHNVebW63b962Yv
+
+docker exec -it jenkins-jenkins-1 cat /var/jenkins_home/secrets/initialAdminPassword  43b54d0a88de4aeba30b322b82b5b8b7
