@@ -1,0 +1,31 @@
+### Project-Specific ###
+# Airflow
+/airflow/dags/*       # Игнорируем папку dags (если нужно оставить структуру, но игнорировать содержимое, используйте `airflow/dags/*`)
+
+# Jenkins
+/jenkins/jenkins_home/*      # Вся папка с данными Jenkins (volume)
+
+# Hadoop
+/hadoop/data/*        # Данные HDFS и другие бинарные файлы Hadoop
+
+
+### Common ###
+# Логи и временные файлы
+logs/
+temp/
+tmp/
+*.log
+*.tmp
+
+# IDE и системные файлы
+.DS_Store
+.idea/
+.vscode/
+*.swp
+*.swo
+
+
+# Docker (кроме самих Dockerfile)
+docker-compose.override.yml
+**/volumes/
+**/*.tar
