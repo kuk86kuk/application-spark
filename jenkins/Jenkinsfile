@@ -24,9 +24,10 @@ pipeline {
         AIRFLOW_DAGS_DIR = "/opt/airflow/dags"
         HDFS_SQL_DIR = "/datamarts/${params.DATAMARTS}"
         REPO_NAME = "${env.JOB_NAME}"
-        AIRFLOW_API_URL = "http://airflow-webserver:8080/api/v1"
-        WEBHDFS_URL = "http://namenode:9870/webhdfs/v1"
-        NETWORK_NAME = "data_network"
+
+        AIRFLOW_API = "http://airflow-airflow-1:8080/api/v1"
+        AIRFLOW_USER = "admin"
+        AIRFLOW_PASS = "admin"
     }
 
     stages {
@@ -45,6 +46,7 @@ pipeline {
                 sh 'ls -R'
             }
         }
+
         stage('Чтение YAML конфигов') {
             steps {
                 script {
@@ -84,20 +86,7 @@ pipeline {
                         def configName = filePath.tokenize('/').last().replace('.yaml', '').replace('.yml', '')
                         allConfigs[configName] = mergedConfig
                         
-                        // Детальное логирование для kpi_calc.yaml
-                        if (configName == 'kpi_calc') {
-                            echo "Детали конфига kpi_calc:"
-                            echo "Версия: ${mergedConfig.version ?: 'не указана'}"
-                            echo "Метаданные: ${mergedConfig.metadata ?: 'отсутствуют'}"
-                            echo "Количество задач: ${mergedConfig.tasks?.size() ?: 0}"
-                            
-                            if (mergedConfig.tasks) {
-                                echo "Список задач:"
-                                mergedConfig.tasks.each { task ->
-                                    echo "- ${task.name} (тип: ${task.type}, скрипт: ${task.script})"
-                                }
-                            }
-                        }
+                    
                             
                         
                     }
@@ -107,95 +96,167 @@ pipeline {
                     env.START_DATE = "2024-01-01"
                     
                     echo "\n=== ИТОГИ ОБРАБОТКИ КОНФИГОВ ==="
+                    echo "Всего успешно обработано конфигов: ${allConfigs}"
                     echo "Всего успешно обработано конфигов: ${allConfigs.size()}"
                     echo "Список конфигов: ${allConfigs.keySet().join(', ')}"
                 }
             }
         }
-        stage('Генерация DAG') {
-                steps {
-                    script {
-                        echo "=== ГЕНЕРАЦИЯ DAG ФАЙЛА ==="
-                        echo "Параметры DAG:"
-                        echo "- Имя: ${REPO_NAME}"
-                        echo "- Расписание: ${env.SCHEDULE_INTERVAL}"
-                        echo "- Начальная дата: ${env.START_DATE}"
+
+       stage('Generate DAG') {
+        steps {
+            script {
+                echo "=== НАЧАЛО ГЕНЕРАЦИИ DAG ФАЙЛОВ ==="
+                
+                // Ensure DAG directory exists
+                sh "mkdir -p /var/jenkins_dags"
+                
+                // Process each config to create a DAG
+                allConfigs.each { configName, config ->
+                    def dagId = "${params.DATAMARTS}_${configName}"
+                    echo "Создание DAG: ${dagId}"
+                    
+                    // Extract schedule interval from config or use default
+                    def scheduleInterval = config.flow?.dependencies?.schedule ?: "@once"
+                    def startDate = config.flow?.dependencies?.start_date ?: "2023-01-01"
+                    
+                    // Generate DAG content
+                    def dagContent = """from airflow import DAG
+                    from airflow.operators.dummy import DummyOperator
+                    from datetime import datetime
+
+                    with DAG(
+                        "${dagId}",
+                        schedule_interval="${scheduleInterval}",
+                        start_date=datetime.strptime("${startDate}", "%Y-%m-%d"),
+                        catchup=False,
+                        tags=["jenkins", "${params.DATAMARTS}"]
+                    ) as dag:
+                        start = DummyOperator(task_id="start")
+                        end = DummyOperator(task_id="end")
                         
-                        def dagContent = """
-                        from datetime import datetime
-                        from airflow import DAG
-                        from airflow.providers.apache.spark.operators.spark_submit import SparkSubmitOperator
-
-                        with DAG(
-                            dag_id='${REPO_NAME}',
-                            schedule_interval='${env.SCHEDULE_INTERVAL}',
-                            start_date=datetime.strptime('${env.START_DATE}', '%Y-%m-%d'),
-                            catchup=False
-                        ) as dag:
-                            spark_job = SparkSubmitOperator(
-                                application="/opt/spark/apps/datamart_processor.py",
-                                task_id="run_${REPO_NAME}",
-                                conn_id="spark_default",
-                                application_args=["${HDFS_SQL_DIR}/${REPO_NAME}"],
-                            )
-                        """
-                        writeFile(file: "${REPO_NAME}.py", text: dagContent)
-                        echo "DAG файл успешно сгенерирован: ${REPO_NAME}.py"
-                        
-                        // Архивируем для сохранения артефакта
-                        archiveArtifacts artifacts: "${REPO_NAME}.py"
-                        echo "Файл добавлен в артефакты сборки"
-                    }
-                }
-            }
-        
-        
-        
-        stage('Развертывание в Airflow') {
-       
-
-        stages {
-            stage('Развертывание в Airflow') {
-                steps {
-                    script {
-                        // Проверка доступности Airflow
-                        def airflow_ready = sh(
-                            script: """
-                                docker run --rm --network ${NETWORK_NAME} curlimages/curl \
-                                -s -X GET "${AIRFLOW_API_URL}/health" \
-                                -H "Authorization: Basic YWRtaW46YWRtaW4=" | grep -q healthy
-                            """,
-                            returnStatus: true
-                        ) == 0
-                        
-                        if (!airflow_ready) {
-                            error "Airflow не доступен по адресу ${AIRFLOW_API_URL}"
-                        }
-
-                        // Копирование DAG в контейнер
-                        sh """
-                            docker cp ${REPO_NAME}.py airflow-webserver:/opt/airflow/dags/
-                            docker exec airflow-webserver chown airflow:airflow /opt/airflow/dags/${REPO_NAME}.py
-                        """
-
-                        // Проверка через API
-                        timeout(time: 3, unit: 'MINUTES') {
-                            waitUntil {
-                                def result = sh(
-                                    script: """
-                                        docker run --rm --network ${NETWORK_NAME} curlimages/curl \
-                                        -s -X GET "${AIRFLOW_API_URL}/dags/${REPO_NAME}" \
-                                        -H "Authorization: Basic YWRtaW46YWRtaW4=" | grep -q '"dag_id":"${REPO_NAME}"'
-                                    """,
-                                    returnStatus: true
-                                )
-                                return result == 0
+                        start >> end
+                    """
+                                    
+                                    // Write DAG file
+                                    writeFile file: "/var/jenkins_dags/${dagId}.py", text: dagContent
+                                    echo "DAG файл создан: /var/jenkins_dags/${dagId}.py"
+                                    
+                                    // Trigger Airflow to update the DAG
+                                    try {
+                                        sh """
+                                            curl -X POST -u ${AIRFLOW_USER}:${AIRFLOW_PASS} \
+                                            -H "Content-Type: application/json" \
+                                            ${AIRFLOW_API}/dags/${dagId}/updateDag
+                                        """
+                                        echo "Airflow DAG ${dagId} успешно обновлен"
+                                    } catch (Exception e) {
+                                        echo "⚠️ Ошибка при обновлении DAG в Airflow: ${e.getMessage()}"
+                                    }
+                                }
+                                
+                                echo "\n=== ИТОГИ ГЕНЕРАЦИИ DAG ==="
+                                echo "Всего создано DAG файлов: ${allConfigs.size()}"
                             }
                         }
-                        echo "✅ DAG успешно зарегистрирован в Airflow"
                     }
+
+        stage('Проверка соединения') {
+            steps {
+                script {
+                    echo "Проверка namenode (WebHDFS):"
+                    sh 'curl -v "http://namenode:9870/webhdfs/v1/?op=LISTSTATUS&user.name=jenkins"'
+                    
+                    echo "Проверка доступности datanode:"
+                    sh '''
+                        # Проверяем доступность порта 9864
+                        if curl -f -s -o /dev/null -m 5 "http://datanode:9864"; then
+                            echo "✅ Datanode доступен на порту 9864"
+                            # Альтернативная проверка состояния datanode
+                            echo "Попытка получить информацию о блоках:"
+                            curl -v "http://namenode:9870/webhdfs/v1/?op=GETCONTENTSUMMARY&user.name=jenkins"
+                        else
+                            echo "❌ Datanode недоступен на порту 9864"
+                            exit 1
+                        fi
+                    '''
+                    
+                    echo "Проверка связи между контейнерами:"
+                    sh '''
+                        # Проверяем разрешение имени
+                        echo "IP адрес datanode: $(getent hosts datanode || echo 'Не удалось разрешить имя')"
+                        
+                        # Альтернативная проверка доступности порта через curl
+                        if curl -f -s -o /dev/null -m 5 "http://datanode:9864"; then
+                            echo "✅ Соединение с datanode:9864 успешно"
+                        else
+                            echo "⚠️ Не удалось установить соединение с datanode:9864"
+                            echo "Проверка через curl:"
+                            curl -v "http://datanode:9864" || true
+                            exit 1
+                        fi
+                    '''
                 }
             }
         }
+
+        stage('Загрузка через WebHDFS') {
+            steps {
+                script {
+                    def WEBHDFS_NAMENODE = "http://namenode:9870/webhdfs/v1"
+                    def HDFS_USER = "jenkins"
+                    def HDFS_BASE_PATH = "${env.HDFS_SQL_DIR}"
+
+                    // Создание корневой директории
+                    echo "Создание корневой директории ${HDFS_BASE_PATH}..."
+                    sh """
+                        curl -f -s -X PUT \
+                        '${WEBHDFS_NAMENODE}${HDFS_BASE_PATH}?op=MKDIRS&user.name=${HDFS_USER}'
+                    """
+
+                    // Поиск и загрузка всех SQL-файлов с сохранением структуры каталогов
+                    dir('sql') {
+                        def files = findFiles(glob: '**/*.sql')  // Рекурсивный поиск всех SQL-файлов
+                        
+                        if (files.size() == 0) {
+                            echo "ℹ️ SQL-файлы не найдены"
+                            return
+                        }
+
+                        files.each { file ->
+                            try {
+                                // Полный относительный путь от корня папки sql
+                                def relativePath = file.path
+                                def hdfsFilePath = "${HDFS_BASE_PATH}/${relativePath}"
+                                def hdfsDirPath = hdfsFilePath.substring(0, hdfsFilePath.lastIndexOf('/'))
+                                
+                                // Создаем поддиректории если нужно
+                                if (hdfsDirPath.length() > HDFS_BASE_PATH.length()) {
+                                    echo "Создание директории ${hdfsDirPath}"
+                                    sh """
+                                        curl -f -s -X PUT \
+                                        '${WEBHDFS_NAMENODE}${hdfsDirPath}?op=MKDIRS&user.name=${HDFS_USER}'
+                                    """
+                                }
+
+                                echo "⏫ Загрузка ${file.path} в ${hdfsFilePath}"
+
+                                // Получение redirect URL и загрузка файла
+                                sh """
+                                    redirect_url=\$(curl -f -s -i -X PUT \
+                                    '${WEBHDFS_NAMENODE}${hdfsFilePath}?op=CREATE&user.name=${HDFS_USER}&overwrite=true' \
+                                    | grep -i '^Location:' | cut -d' ' -f2 | tr -d '\r\n')
+                                    
+                                    curl -f -s -X PUT -T "${file.path}" "\$redirect_url"
+                                """
+                                echo "✅ Успешно загружен: ${file.path}"
+                            } catch (Exception e) {
+                                echo "⚠️ Ошибка загрузки ${file.path}: ${e.getMessage()}"
+                            }
+                        }
+                    }
+                }
+            }
+        }       
     }
-}}
+}
