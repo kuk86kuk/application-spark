@@ -1,3 +1,20 @@
 docker logs airflow-airflow-1 | grep "password" Login with username: admin  password: 9cHNVebW63b962Yv
 
+
+curl -s -o "http://host.docker.internal:9870/webhdfs/v1/?op=LISTSTATUS&user.name=jenkins"
+
+curl -i -X PUT -T "start.sh" "http://host.docker.internal:9870/webhdfs/v1/datamarts/DataMart_transaction/ddl?op=CREATE&user.name=jenkins&overwrite=true"
+
+curl -i -X PUT -T "start.sh" "http://datanode:9864/webhdfs/v1/datamarts/DataMart_transaction/ddl/schema.sql?op=CREATE&user.name=jenkins&namenoderpcaddress=namenode:8020&createflag=&createparent=true&overwrite=true"
+ 
+ 
+ 
+ curl -s -o  -X PUT "http://host.docker.internal:9870/webhdfs/v1/datamarts/DataMart_transaction/1?op=MKDIRS&user.name=jenkins"
+
+curl -s -o /dev/null -w '%{http_code}' -X PUT \
+                    '${WEBHDFS_URL}${HDFS_PATH}?op=MKDIRS&user.name=${HDFS_USER}'
+docker exec -it namenode  bash
+
+curl -s -o /dev/null -w  start.sh "http://datanode:9864/webhdfs/v1/datamarts/DataMart_transaction/ddl/schema.sql?op=CREATE&user.name=jenkins&namenoderpcaddress=namenode:8020&createflag=&createparent=true&overwrite=true"
+curl -X PUT -T start.sh "http://host.docker.internal:9870/webhdfs/v1/datamarts/DataMart_transaction/ddl/schema.sql?op=CREATE&user.name=jenkins"
 docker exec -it jenkins-jenkins-1 cat /var/jenkins_home/secrets/initialAdminPassword  43b54d0a88de4aeba30b322b82b5b8b7

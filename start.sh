@@ -12,6 +12,13 @@ if ! command -v docker-compose &> /dev/null; then
     exit 1
 fi
 
+# Создаем общую сеть (если её нет)
+NETWORK_NAME="my-global-network"
+if ! docker network inspect "$NETWORK_NAME" &> /dev/null; then
+    echo "🌐 Создаем сеть $NETWORK_NAME..."
+    docker network create "$NETWORK_NAME"
+fi
+
 # Функция для запуска сервиса
 start_service() {
     local service_name=$1
@@ -19,9 +26,17 @@ start_service() {
 
     echo "🔄 Запуск $service_name..."
     cd "$service_name" || { echo "❌ Папка $service_name не найдена"; exit 1; }
+    
+    # Запускаем контейнеры с указанием сети
     docker-compose -f "$compose_file" up -d
+    
+    # Подключаем все контейнеры сервиса к общей сети
+    for container in $(docker-compose -f "$compose_file" ps -q); do
+        docker network connect "$NETWORK_NAME" "$container" &> /dev/null || true
+    done
+    
     cd ..
-    echo "✅ $service_name запущен"
+    echo "✅ $service_name запущен и подключен к сети $NETWORK_NAME"
 }
 
 # Запускаем все сервисы
@@ -30,8 +45,8 @@ start_service "airflow" "docker-compose.yml"
 start_service "jenkins" "docker-compose.yml"
 start_service "application spark" "docker-compose.yml"
 
-echo "🎉 Все сервисы успешно запущены!"
+echo "🎉 Все сервисы успешно запущены и соединены в сети $NETWORK_NAME!"
 echo "🔹 Hadoop: http://localhost:9870"
 echo "🔹 Airflow: http://localhost:8080"
 echo "🔹 Jenkins: http://localhost:9090"
-echo "🔹 application spark Master: http://localhost:8081"
+echo "🔹 Spark Master: http://localhost:8081"

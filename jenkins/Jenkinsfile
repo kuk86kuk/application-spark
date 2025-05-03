@@ -1,0 +1,201 @@
+pipeline {
+    agent any
+    
+    parameters {
+        string(
+            name: 'GIT_REPO_URL',
+            defaultValue: 'https://github.com/kuk86kuk/DataMart_transaction',
+            description: 'URL Git-репозитория с конфигами'
+        )
+        string(
+            name: 'CONFIG_DIR',
+            defaultValue: './wf',
+            description: 'Путь к директории с YAML-конфигами'
+        )
+        string(
+            name: 'DATAMARTS',
+            defaultValue: 'DataMart_transaction1',
+            description: 'Название витрины'
+        )
+    }
+
+    environment {
+        HADOOP_NAMENODE = "exec"
+        AIRFLOW_DAGS_DIR = "/opt/airflow/dags"
+        HDFS_SQL_DIR = "/datamarts/${params.DATAMARTS}"
+        REPO_NAME = "${env.JOB_NAME}"
+        AIRFLOW_API_URL = "http://airflow-webserver:8080/api/v1"
+        WEBHDFS_URL = "http://namenode:9870/webhdfs/v1"
+        NETWORK_NAME = "data_network"
+    }
+
+    stages {
+        stage('Получение кода') {
+            steps {
+                checkout([
+                    $class: 'GitSCM',
+                    branches: [[name: '*/main']],
+                    extensions: [],
+                    userRemoteConfigs: [[
+                        url: "${params.GIT_REPO_URL}",
+                        credentialsId: 'github-ssh-key'
+                        
+                    ]]
+                ])
+                sh 'ls -R'
+            }
+        }
+        stage('Чтение YAML конфигов') {
+            steps {
+                script {
+                    echo "=== НАЧАЛО ОБРАБОТКИ YAML КОНФИГОВ ==="
+                    
+                    // 1. Обработка common.yaml
+                    echo "Поиск common.yaml в ${params.CONFIG_DIR}"
+                    def commonConfig = [:]
+                    try {
+                        commonConfig = readYaml file: "${params.CONFIG_DIR}/common.yaml"
+                        echo "Успешно прочитан common.yaml:"
+                        echo "Версия: ${commonConfig.version ?: 'не указана'}"
+                        echo "Другие параметры: ${commonConfig.findAll { it.key != 'version' }}"
+                    } catch (Exception e) {
+                        echo "⚠️ ВНИМАНИЕ: Не удалось прочитать common.yaml"
+                        echo "Ошибка: ${e.getMessage()}"
+                        echo "Продолжаем работу без common.yaml"
+                    }
+
+                    // 2. Поиск других YAML-файлов
+                    echo "Поиск других YAML-файлов в ${params.CONFIG_DIR}"
+                    def findCmd = "find ${params.CONFIG_DIR} -type f \\( -name '*.yaml' -o -name '*.yml' \\) ! -name 'common.yaml' 2>/dev/null || echo ''"
+                    echo "Выполняем команду: ${findCmd}"
+                    
+                    def otherFiles = sh(script: findCmd, returnStdout: true).trim().split('\n')
+                    echo "Найдено файлов: ${otherFiles.size()}"
+                    
+                    def allConfigs = [:]
+                    otherFiles.eachWithIndex { filePath, index ->
+                        echo "\n=== Обработка файла ${index + 1}/${otherFiles.size()}: ${filePath} ==="
+                        // Чтение файла
+                        def config = readYaml file: filePath
+                        echo "Файл прочитан успешно"
+                        
+                        // Объединение с commonConfig
+                        def mergedConfig = commonConfig + config
+                        def configName = filePath.tokenize('/').last().replace('.yaml', '').replace('.yml', '')
+                        allConfigs[configName] = mergedConfig
+                        
+                        // Детальное логирование для kpi_calc.yaml
+                        if (configName == 'kpi_calc') {
+                            echo "Детали конфига kpi_calc:"
+                            echo "Версия: ${mergedConfig.version ?: 'не указана'}"
+                            echo "Метаданные: ${mergedConfig.metadata ?: 'отсутствуют'}"
+                            echo "Количество задач: ${mergedConfig.tasks?.size() ?: 0}"
+                            
+                            if (mergedConfig.tasks) {
+                                echo "Список задач:"
+                                mergedConfig.tasks.each { task ->
+                                    echo "- ${task.name} (тип: ${task.type}, скрипт: ${task.script})"
+                                }
+                            }
+                        }
+                            
+                        
+                    }
+
+                    // Сохранение параметров для DAG
+                    env.SCHEDULE_INTERVAL = allConfigs.flow?.dependencies?.find { it.name == "full_load" }?.schedule ?: "@daily"
+                    env.START_DATE = "2024-01-01"
+                    
+                    echo "\n=== ИТОГИ ОБРАБОТКИ КОНФИГОВ ==="
+                    echo "Всего успешно обработано конфигов: ${allConfigs.size()}"
+                    echo "Список конфигов: ${allConfigs.keySet().join(', ')}"
+                }
+            }
+        }
+        stage('Генерация DAG') {
+                steps {
+                    script {
+                        echo "=== ГЕНЕРАЦИЯ DAG ФАЙЛА ==="
+                        echo "Параметры DAG:"
+                        echo "- Имя: ${REPO_NAME}"
+                        echo "- Расписание: ${env.SCHEDULE_INTERVAL}"
+                        echo "- Начальная дата: ${env.START_DATE}"
+                        
+                        def dagContent = """
+                        from datetime import datetime
+                        from airflow import DAG
+                        from airflow.providers.apache.spark.operators.spark_submit import SparkSubmitOperator
+
+                        with DAG(
+                            dag_id='${REPO_NAME}',
+                            schedule_interval='${env.SCHEDULE_INTERVAL}',
+                            start_date=datetime.strptime('${env.START_DATE}', '%Y-%m-%d'),
+                            catchup=False
+                        ) as dag:
+                            spark_job = SparkSubmitOperator(
+                                application="/opt/spark/apps/datamart_processor.py",
+                                task_id="run_${REPO_NAME}",
+                                conn_id="spark_default",
+                                application_args=["${HDFS_SQL_DIR}/${REPO_NAME}"],
+                            )
+                        """
+                        writeFile(file: "${REPO_NAME}.py", text: dagContent)
+                        echo "DAG файл успешно сгенерирован: ${REPO_NAME}.py"
+                        
+                        // Архивируем для сохранения артефакта
+                        archiveArtifacts artifacts: "${REPO_NAME}.py"
+                        echo "Файл добавлен в артефакты сборки"
+                    }
+                }
+            }
+        
+        
+        
+        stage('Развертывание в Airflow') {
+       
+
+        stages {
+            stage('Развертывание в Airflow') {
+                steps {
+                    script {
+                        // Проверка доступности Airflow
+                        def airflow_ready = sh(
+                            script: """
+                                docker run --rm --network ${NETWORK_NAME} curlimages/curl \
+                                -s -X GET "${AIRFLOW_API_URL}/health" \
+                                -H "Authorization: Basic YWRtaW46YWRtaW4=" | grep -q healthy
+                            """,
+                            returnStatus: true
+                        ) == 0
+                        
+                        if (!airflow_ready) {
+                            error "Airflow не доступен по адресу ${AIRFLOW_API_URL}"
+                        }
+
+                        // Копирование DAG в контейнер
+                        sh """
+                            docker cp ${REPO_NAME}.py airflow-webserver:/opt/airflow/dags/
+                            docker exec airflow-webserver chown airflow:airflow /opt/airflow/dags/${REPO_NAME}.py
+                        """
+
+                        // Проверка через API
+                        timeout(time: 3, unit: 'MINUTES') {
+                            waitUntil {
+                                def result = sh(
+                                    script: """
+                                        docker run --rm --network ${NETWORK_NAME} curlimages/curl \
+                                        -s -X GET "${AIRFLOW_API_URL}/dags/${REPO_NAME}" \
+                                        -H "Authorization: Basic YWRtaW46YWRtaW4=" | grep -q '"dag_id":"${REPO_NAME}"'
+                                    """,
+                                    returnStatus: true
+                                )
+                                return result == 0
+                            }
+                        }
+                        echo "✅ DAG успешно зарегистрирован в Airflow"
+                    }
+                }
+            }
+        }
+    }
+}}
