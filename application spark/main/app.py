@@ -3,7 +3,7 @@ from datetime import datetime
 import sys
 from steps import preload, calc_stg, calc_inc, mtp, hist
 from checks import check_stg, check_inc, final_checks
-from config import start, final
+from config import SparkManager
 from utils.error_handler import handle_errors
 
 # Константы для оформления
@@ -61,14 +61,14 @@ def main():
         print_header("INITIALIZING DATAMART PIPELINE", args.env)
         print(f"\nProcessing datamart: {name_datamart}")
         print("\nInitial checks and setup...")
-        start.run(args.env)
+        SparkManager.get_spark(args.env)
         print("\nInitialization completed successfully!")
         sys.exit(0)
         
     elif args.step == 'final':
         print_header("FINALIZING DATAMART PIPELINE", args.env)
         print(f"\nFinalizing datamart: {name_datamart}")
-        final.run(args.env)
+        SparkManager.stop(args.env)
         print("\nPipeline completed successfully!")
         sys.exit(0)
 
