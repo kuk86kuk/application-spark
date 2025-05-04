@@ -47,120 +47,111 @@ pipeline {
             }
         }
 
-        stage('Чтение YAML конфигов') {
-            steps {
-                script {
-                    echo "=== НАЧАЛО ОБРАБОТКИ YAML КОНФИГОВ ==="
-                    
-                    // 1. Обработка common.yaml
-                    echo "Поиск common.yaml в ${params.CONFIG_DIR}"
-                    def commonConfig = [:]
-                    try {
-                        commonConfig = readYaml file: "${params.CONFIG_DIR}/common.yaml"
-                        echo "Успешно прочитан common.yaml:"
-                        echo "Версия: ${commonConfig.version ?: 'не указана'}"
-                        echo "Другие параметры: ${commonConfig.findAll { it.key != 'version' }}"
-                    } catch (Exception e) {
-                        echo "⚠️ ВНИМАНИЕ: Не удалось прочитать common.yaml"
-                        echo "Ошибка: ${e.getMessage()}"
-                        echo "Продолжаем работу без common.yaml"
-                    }
-
-                    // 2. Поиск других YAML-файлов
-                    echo "Поиск других YAML-файлов в ${params.CONFIG_DIR}"
-                    def findCmd = "find ${params.CONFIG_DIR} -type f \\( -name '*.yaml' -o -name '*.yml' \\) ! -name 'common.yaml' 2>/dev/null || echo ''"
-                    echo "Выполняем команду: ${findCmd}"
-                    
-                    def otherFiles = sh(script: findCmd, returnStdout: true).trim().split('\n')
-                    echo "Найдено файлов: ${otherFiles.size()}"
-                    
-                    def allConfigs = [:]
-                    otherFiles.eachWithIndex { filePath, index ->
-                        echo "\n=== Обработка файла ${index + 1}/${otherFiles.size()}: ${filePath} ==="
-                        // Чтение файла
-                        def config = readYaml file: filePath
-                        echo "Файл прочитан успешно"
-                        
-                        // Объединение с commonConfig
-                        def mergedConfig = commonConfig + config
-                        def configName = filePath.tokenize('/').last().replace('.yaml', '').replace('.yml', '')
-                        allConfigs[configName] = mergedConfig
-                        
-                    
-                            
-                        
-                    }
-
-                    // Сохранение параметров для DAG
-                    env.SCHEDULE_INTERVAL = allConfigs.flow?.dependencies?.find { it.name == "full_load" }?.schedule ?: "@daily"
-                    env.START_DATE = "2024-01-01"
-                    
-                    echo "\n=== ИТОГИ ОБРАБОТКИ КОНФИГОВ ==="
-                    echo "Всего успешно обработано конфигов: ${allConfigs}"
-                    echo "Всего успешно обработано конфигов: ${allConfigs.size()}"
-                    echo "Список конфигов: ${allConfigs.keySet().join(', ')}"
-                }
+       stage('Чтение YAML конфигов и генерация DAG') {
+    steps {
+        script {
+            echo "=== НАЧАЛО ОБРАБОТКИ YAML КОНФИГОВ ==="
+            
+            // 1. Обработка common.yaml
+            echo "Поиск common.yaml в ${params.CONFIG_DIR}"
+            def commonConfig = [:]
+            try {
+                commonConfig = readYaml file: "${params.CONFIG_DIR}/common.yaml"
+                echo "Успешно прочитан common.yaml:"
+                echo "Версия: ${commonConfig.version ?: 'не указана'}"
+                echo "Другие параметры: ${commonConfig.findAll { it.key != 'version' }}"
+            } catch (Exception e) {
+                echo "⚠️ ВНИМАНИЕ: Не удалось прочитать common.yaml"
+                echo "Ошибка: ${e.getMessage()}"
+                echo "Продолжаем работу без common.yaml"
             }
-        }
 
-       stage('Generate DAG') {
-        steps {
-            script {
-                echo "=== НАЧАЛО ГЕНЕРАЦИИ DAG ФАЙЛОВ ==="
+            // 2. Поиск других YAML-файлов
+            echo "Поиск других YAML-файлов в ${params.CONFIG_DIR}"
+            def findCmd = "find ${params.CONFIG_DIR} -type f \\( -name '*.yaml' -o -name '*.yml' \\) ! -name 'common.yaml' 2>/dev/null || echo ''"
+            echo "Выполняем команду: ${findCmd}"
+            
+            def otherFiles = sh(script: findCmd, returnStdout: true).trim().split('\n')
+            echo "Найдено файлов: ${otherFiles.size()}"
+            
+            def allConfigs = [:]
+            otherFiles.eachWithIndex { filePath, index ->
+                echo "\n=== Обработка файла ${index + 1}/${otherFiles.size()}: ${filePath} ==="
+                // Чтение файла
+                def config = readYaml file: filePath
+                echo "Файл прочитан успешно"
                 
-                // Ensure DAG directory exists
-                sh "mkdir -p /var/jenkins_dags"
-                
-                // Process each config to create a DAG
-                allConfigs.each { configName, config ->
-                    def dagId = "${params.DATAMARTS}_${configName}"
-                    echo "Создание DAG: ${dagId}"
-                    
-                    // Extract schedule interval from config or use default
-                    def scheduleInterval = config.flow?.dependencies?.schedule ?: "@once"
-                    def startDate = config.flow?.dependencies?.start_date ?: "2023-01-01"
-                    
-                    // Generate DAG content
-                    def dagContent = """from airflow import DAG
-                    from airflow.operators.dummy import DummyOperator
-                    from datetime import datetime
+                // Объединение с commonConfig
+                def mergedConfig = commonConfig + config
+                def configName = filePath.tokenize('/').last().replace('.yaml', '').replace('.yml', '')
+                allConfigs[configName] = mergedConfig
+            }
 
-                    with DAG(
-                        "${dagId}",
-                        schedule_interval="${scheduleInterval}",
-                        start_date=datetime.strptime("${startDate}", "%Y-%m-%d"),
-                        catchup=False,
-                        tags=["jenkins", "${params.DATAMARTS}"]
-                    ) as dag:
-                        start = DummyOperator(task_id="start")
-                        end = DummyOperator(task_id="end")
-                        
-                        start >> end
-                    """
-                                    
-                                    // Write DAG file
-                                    writeFile file: "/var/jenkins_dags/${dagId}.py", text: dagContent
-                                    echo "DAG файл создан: /var/jenkins_dags/${dagId}.py"
-                                    
-                                    // Trigger Airflow to update the DAG
-                                    try {
-                                        sh """
-                                            curl -X POST -u ${AIRFLOW_USER}:${AIRFLOW_PASS} \
-                                            -H "Content-Type: application/json" \
-                                            ${AIRFLOW_API}/dags/${dagId}/updateDag
-                                        """
-                                        echo "Airflow DAG ${dagId} успешно обновлен"
-                                    } catch (Exception e) {
-                                        echo "⚠️ Ошибка при обновлении DAG в Airflow: ${e.getMessage()}"
-                                    }
-                                }
-                                
-                                echo "\n=== ИТОГИ ГЕНЕРАЦИИ DAG ==="
-                                echo "Всего создано DAG файлов: ${allConfigs.size()}"
-                            }
-                        }
+            // Сохранение параметров для DAG
+            env.SCHEDULE_INTERVAL = allConfigs.flow?.dependencies?.find { it.name == "full_load" }?.schedule ?: "@daily"
+            env.START_DATE = "2024-01-01"
+            
+            echo "\n=== ИТОГИ ОБРАБОТКИ КОНФИГОВ ==="
+            echo "Всего успешно обработано конфигов: ${allConfigs.size()}"
+            echo "Список конфигов: ${allConfigs.keySet().join(', ')}"
+
+            echo "=== НАЧАЛО ГЕНЕРАЦИИ DAG ФАЙЛОВ ==="
+            
+           
+            // Process each config to create a DAG
+            allConfigs.each { configName, config ->
+                def dagId = "${params.DATAMARTS}_${configName}"
+                echo "Создание DAG: ${dagId}"
+                
+                // Извлекаем параметры из конфига
+                def scheduleInterval = config.flow?.dependencies?.find { it.name == "full_load" }?.schedule ?: "@once"
+                def startDate = config.flow?.dependencies?.find { it.name == "full_load" }?.start_date ?: "2023-01-01"
+                
+                // Генерируем задачи из конфига
+                def tasksContent = ""
+                def tasksDependencies = ""
+                if (config.flow?.dependencies?.find { it.name == "full_load" }?.tasks) {
+                    def tasks = config.flow.dependencies.find { it.name == "full_load" }.tasks
+                    tasks.each { task ->
+                        tasksContent += "    ${task} = DummyOperator(task_id='${task}')\n"
                     }
+                    tasksDependencies = "    start >> " + tasks.join(" >> ") + " >> end"
+                }
+                
+                // Generate DAG content
+                def dagContent = """from airflow import DAG
+from airflow.operators.dummy import DummyOperator
+from datetime import datetime
 
+with DAG(
+    "${dagId}",
+    schedule_interval="${scheduleInterval}",
+    start_date=datetime.strptime("${startDate}", "%Y-%m-%d"),
+    catchup=False,
+    tags=["jenkins", "${params.DATAMARTS}"],
+    params=${config}
+) as dag:
+    start = DummyOperator(task_id="start")
+    end = DummyOperator(task_id="end")
+    
+${tasksContent}
+${tasksDependencies ?: '    start >> end'}
+"""
+                
+                // Write DAG file
+                writeFile file: "/var/jenkins_dags/${dagId}.py", text: dagContent
+                echo "DAG файл создан: /var/jenkins_dags/${dagId}.py"
+            }
+            
+            echo "\n=== ИТОГИ ГЕНЕРАЦИИ DAG ==="
+            echo "Всего создано DAG файлов: ${allConfigs.size()}"
+        }
+    }
+}
+
+       
+
+        
         stage('Проверка соединения') {
             steps {
                 script {
