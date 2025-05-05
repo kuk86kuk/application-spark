@@ -20,10 +20,7 @@ with DAG(
     tags=['spark', 'hive']      # Теги для поиска
 ) as dag:
     
-    # 3. Операторы (шаги) DAG
-    
-    # Стартовая точка (просто маркер)
-    start = DummyOperator(task_id='start')
+ 
     
     # Общие параметры для всех Spark-задач
     common_spark_args = {
@@ -37,8 +34,8 @@ with DAG(
     
     # Задача 1: старт плиложение
     load_transactions = SparkSubmitOperator(
-        task_id='load_transaction_mart',  # Уникальный ID задачи
-        name='load_transaction_mart',     # Имя для Spark UI
+        task_id='start',  # Уникальный ID задачи
+        name='start',     # Имя для Spark UI
         **common_spark_args,             # Общие параметры
         application_args=common_spark_args['application_args'] + [
             '--mart=transaction'         # Доп. параметр: загружаем транзакции
@@ -47,8 +44,8 @@ with DAG(
     
     # Задача 2: предзагрузка ичтосников  данных
     load_customers = SparkSubmitOperator(
-        task_id='load_customer_mart',
-        name='load_customer_mart',
+        task_id='pred_load',
+        name='pred_load',
         **common_spark_args,
         application_args=common_spark_args['application_args'] + [
             '--mart=customer'           # Доп. параметр: загружаем клиентов
@@ -57,36 +54,90 @@ with DAG(
     
     # Задача 3: стг (калк стг)
     load_customers = SparkSubmitOperator(
-        task_id='load_customer_mart',
-        name='load_customer_mart',
+        task_id='calk_stg',
+        name='calk_stg',
         **common_spark_args,
         application_args=common_spark_args['application_args'] + [
             '--mart=customer'           # Доп. параметр: загружаем клиентов
         ]
     )
 
+    # Задача 3.1: стг проверки ключ на заполнение и так делее
+    load_customers = SparkSubmitOperator(
+        task_id='stg_chek',
+        name='stg_chek',
+        **common_spark_args,
+        application_args=common_spark_args['application_args'] + [
+            '--mart=customer'           # Доп. параметр: загружаем клиентов
+        ]
+    )
      # Задача 4: инкримент (калк инк)
     load_customers = SparkSubmitOperator(
-        task_id='load_customer_mart',
-        name='load_customer_mart',
+        task_id='calk_inc',
+        name='calk_inc',
         **common_spark_args,
         application_args=common_spark_args['application_args'] + [
             '--mart=customer'           # Доп. параметр: загружаем клиентов
         ]
     )
 
-     # Задача 5: инкримент (калк инк)
+     # Задача 4.1: инкримент проверки на бизес логику
     load_customers = SparkSubmitOperator(
-        task_id='load_customer_mart',
-        name='load_customer_mart',
+        task_id='inc_chek',
+        name='inc_chek',
         **common_spark_args,
         application_args=common_spark_args['application_args'] + [
             '--mart=customer'           # Доп. параметр: загружаем клиентов
         ]
     )
 
-    # Конечная точка (просто маркер)
-    end = DummyOperator(task_id='end')
+     # Задача 5: mtp 
+    load_customers = SparkSubmitOperator(
+        task_id='mtp',
+        name='mtp',
+        **common_spark_args,
+        application_args=common_spark_args['application_args'] + [
+            '--mart=customer'           # Доп. параметр: загружаем клиентов
+        ]
+    )
+    # Задача 6:  (калк хиск)
+    load_customers = SparkSubmitOperator(
+        task_id='hist',
+        name='hist',
+        **common_spark_args,
+        application_args=common_spark_args['application_args'] + [
+            '--mart=customer'           # Доп. параметр: загружаем клиентов
+        ]
+    )
+
+      # Задача 6.1:  проверка записей в загрузку хиста
+    load_customers = SparkSubmitOperator(
+        task_id='hist_chek',
+        name='hist_chek',
+        **common_spark_args,
+        application_args=common_spark_args['application_args'] + [
+            '--mart=customer'           # Доп. параметр: загружаем клиентов
+        ]
+    )
+      # Задача 7:  общая проверка а также анализ результата
+    load_customers = SparkSubmitOperator(
+        task_id='hist_chek',
+        name='hist_chek',
+        **common_spark_args,
+        application_args=common_spark_args['application_args'] + [
+            '--mart=customer'           # Доп. параметр: загружаем клиентов
+        ]
+    )
+   # Задача 8:  финиш
+    load_customers = SparkSubmitOperator(
+        task_id='hist_chek',
+        name='hist_chek',
+        **common_spark_args,
+        application_args=common_spark_args['application_args'] + [
+            '--mart=customer'           # Доп. параметр: загружаем клиентов
+        ]
+    )
+    
     
     # 4. Определяем порядок выполнения
     start >> [load_transactions, load_customers] >> end
