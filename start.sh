@@ -19,13 +19,6 @@ if ! docker network inspect "$NETWORK_NAME" &> /dev/null; then
     docker network create "$NETWORK_NAME"
 fi
 
-# Создаем общий том для DAG-файлов (если его нет)
-VOLUME_NAME="airflow_dags"
-if ! docker volume inspect "$VOLUME_NAME" &> /dev/null; then
-    echo "💾 Создаем общий том $VOLUME_NAME..."
-    docker volume create "$VOLUME_NAME"
-fi
-
 # Функция для запуска сервиса
 start_service() {
     local service_name=$1
@@ -50,10 +43,8 @@ start_service() {
 start_service "hadoop" "docker-compose.yml"
 start_service "airflow" "docker-compose.yml"
 start_service "jenkins" "docker-compose.yml"
-start_service "application spark" "docker-compose.yml"
 
 echo "🎉 Все сервисы успешно запущены и соединены в сети $NETWORK_NAME!"
 echo "🔹 Hadoop: http://localhost:9870"
-echo "🔹 Airflow: http://localhost:8080 (логин: admin, пароль: admin)"
-echo "🔹 Jenkins: http://localhost:9090 (пароль из logs: docker logs jenkins)"
-echo "🔹 Spark Master: http://localhost:8081"
+echo "🔹 Airflow: http://localhost:8080"
+echo "🔹 Jenkins: http://localhost:9090"

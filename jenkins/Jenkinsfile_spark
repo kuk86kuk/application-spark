@@ -1,0 +1,122 @@
+pipeline {
+    agent any
+    
+    parameters {
+        string(name: 'REPO_URL', defaultValue: 'https://github.com/kuk86kuk/application-spark', description: 'URL репозитория')
+        string(name: 'SPARK_DIR', defaultValue: 'spark-app', description: 'Папка с Spark-приложением в репозитории')
+        string(name: 'HDFS_TARGET_PATH', defaultValue: '/', description: 'Целевой путь в HDFS')
+    }
+    
+    environment {
+        WEBHDFS_NAMENODE = "http://namenode:9870/webhdfs/v1"
+        HDFS_USER = "jenkins"
+    }
+    
+    stages {
+        stage('Checkout SCM') {
+            steps {
+                checkout([
+                    $class: 'GitSCM',
+                    branches: [[name: '*/main']],
+                    extensions: [],
+                    userRemoteConfigs: [[url: "${params.REPO_URL}"]]
+                ])
+                script {
+                    echo "✅ Репозиторий успешно склонирован: ${params.REPO_URL}"
+                }
+            }
+        }
+        
+        stage('Проверка структуры') {
+            steps {
+                script {
+                    if (!fileExists("${params.SPARK_DIR}")) {
+                        error "❌ Папка с Spark-приложением не найдена: ${params.SPARK_DIR}"
+                    }
+                    
+                    def fileCount = sh(script: "find ${params.SPARK_DIR} -type f | wc -l", returnStdout: true).trim()
+                    echo "Найдено ${fileCount} файлов в ${params.SPARK_DIR}"
+                }
+            }
+        }
+        
+        stage('Перенос в HDFS') {
+            steps {
+                script {
+                    def fullHdfsPath = "${params.HDFS_TARGET_PATH}/${JOB_NAME}-${BUILD_NUMBER}"
+                    
+                    // Очистка и создание целевой директории
+                    hdfsDeleteRecursive(fullHdfsPath)
+                    hdfsCreateDirectory(fullHdfsPath)
+                    
+                    // Рекурсивный поиск всех файлов
+                    def allFiles = findFiles(glob: "${params.SPARK_DIR}/**/*")
+                    
+                    if (allFiles.size() == 0) {
+                        error "❌ В папке ${params.SPARK_DIR} не найдены файлы"
+                    }
+                    
+                    allFiles.each { file ->
+                        if (!file.directory) {
+                            try {
+                                def relativePath = file.path.replace("${params.SPARK_DIR}/", "")
+                                def hdfsFilePath = "${fullHdfsPath}/${relativePath}"
+                                
+                                hdfsUploadFile(
+                                    localPath: file.path,
+                                    hdfsPath: hdfsFilePath,
+                                    createParentDirs: true
+                                )
+                            } catch (Exception e) {
+                                error "⚠️ Ошибка загрузки ${file.path}: ${e.getMessage()}"
+                            }
+                        }
+                    }
+                    
+                    // Сохраняем итоговый путь для использования в других джобах
+                    env.HDFS_APP_PATH = fullHdfsPath
+                }
+            }
+        }
+    }
+    
+    post {
+        success {
+            echo "✅ Структура успешно перенесена в HDFS"
+            echo "Путь: hdfs://namenode:8020${env.HDFS_APP_PATH}"
+            archiveArtifacts artifacts: '**/*.log', allowEmptyArchive: true
+        }
+        failure {
+            echo "❌ Ошибка при переносе структуры"
+            slackSend color: 'danger', message: "Failed: ${env.JOB_NAME} #${env.BUILD_NUMBER}"
+        }
+    }
+}
+
+// ===== Вспомогательные функции =====
+def hdfsCreateDirectory(String path) {
+    sh """
+        curl -f -s -X PUT \
+        '${env.WEBHDFS_NAMENODE}${path}?op=MKDIRS&user.name=${env.HDFS_USER}'
+    """
+}
+
+def hdfsDeleteRecursive(String path) {
+    sh """
+        curl -f -s -X DELETE \
+        '${env.WEBHDFS_NAMENODE}${path}?op=DELETE&recursive=true&user.name=${env.HDFS_USER}' || true
+    """
+}
+
+def hdfsUploadFile(Map params) {
+    def parentDir = params.hdfsPath.substring(0, params.hdfsPath.lastIndexOf('/'))
+    hdfsCreateDirectory(parentDir)
+    
+    sh """
+        redirect_url=\$(curl -f -s -i -X PUT \
+        '${env.WEBHDFS_NAMENODE}${params.hdfsPath}?op=CREATE&user.name=${env.HDFS_USER}&overwrite=true' \
+        | grep -i '^Location:' | cut -d' ' -f2 | tr -d '\r\n')
+        
+        curl -f -s -X PUT -T "${params.localPath}" "\$redirect_url"
+    """
+}

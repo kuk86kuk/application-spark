@@ -27,7 +27,7 @@ docker exec -it jenkins-jenkins-1 cat /var/jenkins_home/secrets/initialAdminPass
 
 
 
-
+$ docker exec airflow-airflow-1 airflow dags reserialize
 помоги мне надо написать работающий код для приложения.  Я сделал пиплпй который, который принмает на сход витрину https://github.com/kuk86kuk/DataMart_transaction
 Папку sql сохроняет на hadoop, из wf делает даги для потоков загрузок. Мне надо написать спарк плиложение которые,
 который принимает sql и сохроняет их в бд (hive)
