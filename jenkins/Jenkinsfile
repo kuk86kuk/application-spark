@@ -87,10 +87,6 @@ pipeline {
                 allConfigs[configName] = mergedConfig
             }
 
-            // Сохранение параметров для DAG
-            env.SCHEDULE_INTERVAL = allConfigs.flow?.dependencies?.find { it.name == "full_load" }?.schedule ?: "@daily"
-            env.START_DATE = "2024-01-01"
-            
             echo "\n=== ИТОГИ ОБРАБОТКИ КОНФИГОВ ==="
             echo "Всего успешно обработано конфигов: ${allConfigs.size()}"
             echo "Список конфигов: ${allConfigs.keySet().join(', ')}"
@@ -100,24 +96,63 @@ pipeline {
            
             // Process each config to create a DAG
             allConfigs.each { configName, config ->
+                echo "${config}"
                 def dagId = "${params.DATAMARTS}_${configName}"
+                def schedule_interval = config.pipeline.schedule_interval ?: false
+                def startDate = config.pipeline.startDate ?: "datetime(2025, 1, 1)"
+
+                def application = config.application ?: false
+                def conn_id = config.conn_id ?: false
+                def application_args = config.application_args 
+
                 echo "Создание DAG: ${dagId}"
+                def expectedStages = [
+                    "stage_preload",
+                    "stage_calc_stg",
+                    "stage_check_stg",
+                    "stage_calc_inc",
+                    "stage_check_inc",
+                    "stage_MTP",
+                    "stage_hist",
+                    "final_check"
+                ]
+                 // Формируем задачи для DAG
+                def tasksContent = new StringBuilder()
+                def dependencies = []
+                def previousTask = "start"
                 
-                // Извлекаем параметры из конфига
-                def scheduleInterval = config.flow?.dependencies?.find { it.name == "full_load" }?.schedule ?: "@once"
-                def startDate = config.flow?.dependencies?.find { it.name == "full_load" }?.start_date ?: "2023-01-01"
-                
-                // Генерируем задачи из конфига
-                def tasksContent = ""
-                def tasksDependencies = ""
-                if (config.flow?.dependencies?.find { it.name == "full_load" }?.tasks) {
-                    def tasks = config.flow.dependencies.find { it.name == "full_load" }.tasks
-                    tasks.each { task ->
-                        tasksContent += "    ${task} = DummyOperator(task_id='${task}')\n"
+                expectedStages.each { stageName ->
+                    def stageConfig = config.pipeline.stages?.get(stageName)
+                    echo "stageConfig ${stageConfig}"
+                 
+                     if (stageConfig) {
+        echo "✅ Stage '${stageName}' найден в конфиге: ${stageConfig}"
+        
+        // Преобразуем параметры в нужный формат
+        def params = stageConfig.params ?: [:]
+        def sparkArgs = params.collect { key, value ->
+            "'--${key}=${value}'"
+        }.join(",\n        ")
+        
+        tasksContent.append("""
+    ${stageName} = PythonOperator(
+        task_id="${stageName}",
+        name="${stageName}",
+        **common_spark_args,
+        application_args=common_spark_args['application_args'] + [
+            ${sparkArgs}
+        ]
+    )
+""")
+                        // Добавляем зависимость
+                        dependencies << "${previousTask} >> ${stageName}"
+                        previousTask = stageName
                     }
-                    tasksDependencies = "    start >> " + tasks.join(" >> ") + " >> end"
-                }
                 
+                }
+                // Финализируем зависимости
+                def dependenciesContent = dependencies.join("\n    ") + " >> final"
+
                 // Generate DAG content
                 def dagContent = """from airflow import DAG
 from airflow.operators.dummy import DummyOperator
@@ -125,17 +160,35 @@ from datetime import datetime
 
 with DAG(
     "${dagId}",
-    schedule_interval="${scheduleInterval}",
-    start_date=datetime.strptime("${startDate}", "%Y-%m-%d"),
+    schedule_interval="${schedule_interval}",
+    start_date=${startDate},
     catchup=False,
-    tags=["jenkins", "${params.DATAMARTS}"],
-    params=${config}
+    tags=["jenkins", "${params.DATAMARTS}"]
 ) as dag:
-    start = DummyOperator(task_id="start")
-    end = DummyOperator(task_id="end")
+
+    common_spark_args = {
+        'application': '${application}', 
+        'conn_id': '${conn_id}',  
+        'application_args': [        
+            '${application_args}'
+        ]
+    }
+
+    start = SparkSubmitOperator(
+        task_id='start',  
+        name='start',     
+        **common_spark_args
+    )
     
-${tasksContent}
-${tasksDependencies ?: '    start >> end'}
+    ${tasksContent.toString()}
+
+    final = SparkSubmitOperator(
+        task_id='final',  
+        name='final',     
+        **common_spark_args
+    )
+
+    ${dependenciesContent}
 """
                 
                 // Write DAG file
