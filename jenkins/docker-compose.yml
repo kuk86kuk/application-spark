@@ -1,4 +1,3 @@
-# docker-compose-jenkins.yml
 version: '3'
 
 services:
@@ -8,14 +7,19 @@ services:
     ports:
       - "9090:8080"
     volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
       - jenkins_data:/var/jenkins_home
-      - /var/run/docker.sock:/var/run/docker.sock  # Для работы с Docker
-      - airflow_dags:/var/jenkins_dags  # Jenkins пишет DAG-файлы сюда
+      - /var/run/docker.sock:/var/run/docker.sock
+      - airflow_dags:/opt/airflow/dags  # Общий том для DAG-файлов
     environment:
       - DOCKER_HOST=unix:///var/run/docker.sock
+    networks:
+      - my-global-network
 
 volumes:
   jenkins_data:
   airflow_dags:
-    external: true  # Используем тот же том, что и в Airflow
+    external: true
+
+networks:
+  my-global-network:
+    external: true

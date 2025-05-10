@@ -1,4 +1,3 @@
-# docker-compose-airflow.yml
 version: '3'
 
 services:
@@ -13,6 +12,22 @@ services:
       interval: 5s
       timeout: 5s
       retries: 10
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - my-global-network
+
+  redis:
+    image: redis:latest
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 30s
+      retries: 50
+    networks:
+      - my-global-network
 
   airflow-init:
     image: apache/airflow:2.6.3
@@ -22,34 +37,113 @@ services:
     environment:
       - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@postgres:5432/airflow
       - AIRFLOW__CORE__FERNET_KEY=46BKJoQYlPPOexq0OhDZnIlNepKFf87WFwLbfzqDDho=
+      - AIRFLOW__CORE__EXECUTOR=CeleryExecutor
+    volumes:
+      - airflow_dags:/opt/airflow/dags
+      - airflow_logs:/opt/airflow/logs
+      - airflow_plugins:/opt/airflow/plugins
     command: >
       bash -c "
       airflow db init &&
       airflow users create --username admin --password admin --firstname Admin --lastname Admin --role Admin --email admin@example.com
       "
+    networks:
+      - my-global-network
 
-  airflow:
-    image: apache/airflow:2.6.3
+  airflow-webserver:
+    build: .
     restart: unless-stopped
     ports:
       - "8080:8080"
     depends_on:
-      postgres:
-        condition: service_healthy
-      airflow-init:
-        condition: service_completed_successfully
+      - postgres
+      - redis
+      - airflow-init
     environment:
       - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@postgres:5432/airflow
-      - AIRFLOW__CORE__EXECUTOR=SequentialExecutor
+      - AIRFLOW__CORE__EXECUTOR=CeleryExecutor
       - AIRFLOW__CORE__FERNET_KEY=46BKJoQYlPPOexq0OhDZnIlNepKFf87WFwLbfzqDDho=
       - AIRFLOW__CORE__DAG_DIR_LIST_INTERVAL=10
+      - AIRFLOW__WEBSERVER__BASE_URL=http://localhost:8080
+      - AIRFLOW__WEBSERVER__WEB_SERVER_HOST=0.0.0.0
+      - AIRFLOW__WEBSERVER__WEB_SERVER_PORT=8080
+      - AIRFLOW__LOGGING__REMOTE_LOGGING=False
+      - JAVA_HOME=/usr/lib/jvm/java-11-openjdk-amd64
     volumes:
-      - airflow_dags:/opt/airflow/dags  # Airflow читает DAG-файлы отсюда
-    command: bash -c "airflow db check && airflow webserver"
+      - airflow_dags:/opt/airflow/dags
+      - airflow_logs:/opt/airflow/logs
+      - airflow_plugins:/opt/airflow/plugins
+    command: >
+      bash -c "
+      pip install --upgrade pip &&
+      pip install \"sqlalchemy<2.0\" \"apache-airflow-providers-apache-spark==4.1.0\" &&
+      while ! airflow db check; do sleep 5; done &&
+      airflow webserver
+      "
+    networks:
+      - my-global-network
+
+  airflow-scheduler:
+    build: .
+    restart: unless-stopped
+    depends_on:
+      - postgres
+      - redis
+      - airflow-init
+    environment:
+      - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@postgres:5432/airflow
+      - AIRFLOW__CORE__EXECUTOR=CeleryExecutor
+      - AIRFLOW__CORE__FERNET_KEY=46BKJoQYlPPOexq0OhDZnIlNepKFf87WFwLbfzqDDho=
+      - AIRFLOW__CELERY__BROKER_URL=redis://redis:6379/0
+      - AIRFLOW__CELERY__RESULT_BACKEND=db+postgresql://airflow:airflow@postgres:5432/airflow
+      - JAVA_HOME=/usr/lib/jvm/java-11-openjdk-amd64
+    volumes:
+      - airflow_dags:/opt/airflow/dags
+      - airflow_logs:/opt/airflow/logs
+      - airflow_plugins:/opt/airflow/plugins
+    command: >
+      bash -c "
+      pip install apache-airflow-providers-apache-spark==4.1.0 &&
+      while ! airflow db check; do sleep 5; done &&
+      airflow scheduler
+      "
+    networks:
+      - my-global-network
+
+  airflow-worker:
+    build: .
+    restart: unless-stopped
+    depends_on:
+      - postgres
+      - redis
+      - airflow-init
+    environment:
+      - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@postgres:5432/airflow
+      - AIRFLOW__CORE__EXECUTOR=CeleryExecutor
+      - AIRFLOW__CORE__FERNET_KEY=46BKJoQYlPPOexq0OhDZnIlNepKFf87WFwLbfzqDDho=
+      - AIRFLOW__CELERY__BROKER_URL=redis://redis:6379/0
+      - AIRFLOW__CELERY__RESULT_BACKEND=db+postgresql://airflow:airflow@postgres:5432/airflow
+      - JAVA_HOME=/usr/lib/jvm/java-11-openjdk-amd64
+    volumes:
+      - airflow_dags:/opt/airflow/dags
+      - airflow_logs:/opt/airflow/logs
+      - airflow_plugins:/opt/airflow/plugins
+    command: >
+      bash -c "
+      pip install apache-airflow-providers-apache-spark==4.1.0 &&
+      while ! airflow db check; do sleep 5; done &&
+      airflow celery worker
+      "
+    networks:
+      - my-global-network
 
 volumes:
   airflow_dags:
-    external: true  # Используем внешний том (созданный ранее)
+    external: true
+  postgres_data:
+  airflow_logs:
+  airflow_plugins:
 
-
-    
+networks:
+  my-global-network:
+    external: true

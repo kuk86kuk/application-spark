@@ -2,40 +2,98 @@ pipeline {
     agent any
     
     parameters {
-        string(name: 'REPO_URL', defaultValue: 'https://github.com/kuk86kuk/application-spark', description: 'URL репозитория')
-        string(name: 'SPARK_DIR', defaultValue: 'spark-app', description: 'Папка с Spark-приложением в репозитории')
-        string(name: 'HDFS_TARGET_PATH', defaultValue: '/', description: 'Целевой путь в HDFS')
+        string(
+            name: 'GIT_REPO_URL',
+            defaultValue: 'https://github.com/kuk86kuk/application-spark',
+            description: 'URL Git-репозитория с конфигами'
+        )
+        string(
+            name: 'HDFS_BASE_PATH',
+            defaultValue: '/user/jenkins/spark-apps',
+            description: 'Базовый путь в HDFS для загрузки приложений'
+        )
+        string(
+            name: 'WEBHDFS_NAMENODE',
+            defaultValue: 'http://namenode:9870/webhdfs/v1',
+            description: 'URL WebHDFS Namenode'
+        )
+        string(
+            name: 'HDFS_USER',
+            defaultValue: 'jenkins',
+            description: 'Пользователь HDFS'
+        )
+        string(
+            name: 'SPARK_APP_DIR',
+            defaultValue: 'application_spark',
+            description: 'Имя папки с Spark-приложением'
+        )
     }
-    
+
     environment {
-        WEBHDFS_NAMENODE = "http://namenode:9870/webhdfs/v1"
-        HDFS_USER = "jenkins"
+        HDFS_BASE_PATH = "${params.HDFS_BASE_PATH}"
+        WEBHDFS_NAMENODE = "${params.WEBHDFS_NAMENODE}"
+        HDFS_USER = "${params.HDFS_USER}"
+        SPARK_APP_DIR = "${params.SPARK_APP_DIR}"
     }
-    
+
     stages {
-        stage('Checkout SCM') {
+        stage('Подготовка') {
+            steps {
+                script {
+                    // Проверка обязательных параметров
+                    def requiredParams = [
+                        'GIT_REPO_URL',
+                        'HDFS_BASE_PATH',
+                        'WEBHDFS_NAMENODE',
+                        'HDFS_USER',
+                        'SPARK_APP_DIR'
+                    ]
+                    
+                    requiredParams.each { param ->
+                        if (!params[param]?.trim()) {
+                            error "❌ Не задан обязательный параметр: ${param}"
+                        }
+                    }
+                    
+                    echo "Параметры конфигурации:"
+                    echo "Git Repo URL: ${params.GIT_REPO_URL}"
+                    echo "HDFS Base Path: ${params.HDFS_BASE_PATH}"
+                    echo "WebHDFS Namenode: ${params.WEBHDFS_NAMENODE}"
+                    echo "HDFS User: ${params.HDFS_USER}"
+                    echo "Spark App Dir: ${params.SPARK_APP_DIR}"
+                }
+            }
+        }
+        
+        stage('Получение кода') {
             steps {
                 checkout([
                     $class: 'GitSCM',
                     branches: [[name: '*/main']],
                     extensions: [],
-                    userRemoteConfigs: [[url: "${params.REPO_URL}"]]
+                    userRemoteConfigs: [[
+                        url: "${params.GIT_REPO_URL}",
+                        credentialsId: 'github-ssh-key'
+                    ]]
                 ])
-                script {
-                    echo "✅ Репозиторий успешно склонирован: ${params.REPO_URL}"
-                }
+                sh 'ls -al'
             }
         }
         
         stage('Проверка структуры') {
             steps {
                 script {
-                    if (!fileExists("${params.SPARK_DIR}")) {
-                        error "❌ Папка с Spark-приложением не найдена: ${params.SPARK_DIR}"
+                    if (!fileExists(env.SPARK_APP_DIR)) {
+                        error "❌ Папка с Spark-приложением '${env.SPARK_APP_DIR}' не найдена"
                     }
                     
-                    def fileCount = sh(script: "find ${params.SPARK_DIR} -type f | wc -l", returnStdout: true).trim()
-                    echo "Найдено ${fileCount} файлов в ${params.SPARK_DIR}"
+                    def fileCount = sh(script: "find ${env.SPARK_APP_DIR} -type f | wc -l", returnStdout: true).trim()
+                    if (fileCount == "0") {
+                        error "❌ В папке ${env.SPARK_APP_DIR} не найдены файлы"
+                    }
+                    
+                    echo "Найдена папка с Spark-приложением: ${env.SPARK_APP_DIR}"
+                    echo "Количество файлов: ${fileCount}"
                 }
             }
         }
@@ -43,37 +101,30 @@ pipeline {
         stage('Перенос в HDFS') {
             steps {
                 script {
-                    def fullHdfsPath = "${params.HDFS_TARGET_PATH}/${JOB_NAME}-${BUILD_NUMBER}"
+                    def fullHdfsPath = "${env.HDFS_BASE_PATH}"
                     
-                    // Очистка и создание целевой директории
+                    echo "Создание HDFS директории: ${fullHdfsPath}"
                     hdfsDeleteRecursive(fullHdfsPath)
                     hdfsCreateDirectory(fullHdfsPath)
                     
-                    // Рекурсивный поиск всех файлов
-                    def allFiles = findFiles(glob: "${params.SPARK_DIR}/**/*")
+                    // Используем более простой подход для загрузки файлов
+                    sh """
+                        find ${env.SPARK_APP_DIR} -type f | while read file; do
+                            relative_path="\${file#${env.SPARK_APP_DIR}/}"
+                            hdfs_path="${fullHdfsPath}/\${relative_path}"
+                            hdfs_dir="\$(dirname "\$hdfs_path")"
+                            
+                            # Создаем директорию в HDFS
+                            curl -s -X PUT "${env.WEBHDFS_NAMENODE}\${hdfs_dir}?op=MKDIRS&user.name=${env.HDFS_USER}"
+                            
+                            # Загружаем файл
+                            redirect_url=\$(curl -s -i -X PUT "${env.WEBHDFS_NAMENODE}\${hdfs_path}?op=CREATE&user.name=${env.HDFS_USER}&overwrite=true" | grep -i '^Location:' | awk '{print \$2}' | tr -d '\r\n')
+                            curl -s -X PUT -T "\$file" "\$redirect_url" && \
+                            echo "Uploaded: \$file -> \$hdfs_path" || \
+                            echo "Failed to upload: \$file"
+                        done
+                    """
                     
-                    if (allFiles.size() == 0) {
-                        error "❌ В папке ${params.SPARK_DIR} не найдены файлы"
-                    }
-                    
-                    allFiles.each { file ->
-                        if (!file.directory) {
-                            try {
-                                def relativePath = file.path.replace("${params.SPARK_DIR}/", "")
-                                def hdfsFilePath = "${fullHdfsPath}/${relativePath}"
-                                
-                                hdfsUploadFile(
-                                    localPath: file.path,
-                                    hdfsPath: hdfsFilePath,
-                                    createParentDirs: true
-                                )
-                            } catch (Exception e) {
-                                error "⚠️ Ошибка загрузки ${file.path}: ${e.getMessage()}"
-                            }
-                        }
-                    }
-                    
-                    // Сохраняем итоговый путь для использования в других джобах
                     env.HDFS_APP_PATH = fullHdfsPath
                 }
             }
@@ -82,13 +133,27 @@ pipeline {
     
     post {
         success {
-            echo "✅ Структура успешно перенесена в HDFS"
-            echo "Путь: hdfs://namenode:8020${env.HDFS_APP_PATH}"
-            archiveArtifacts artifacts: '**/*.log', allowEmptyArchive: true
+            script {
+                def namenodeHost = sh(
+                    script: "echo '${env.WEBHDFS_NAMENODE}' | sed -e 's|^http://||' -e 's|/.*||'",
+                    returnStdout: true
+                ).trim()
+                
+                echo "✅ Структура успешно перенесена в HDFS"
+                echo "Путь: hdfs://${namenodeHost}${env.HDFS_APP_PATH}"
+                echo "Для доступа используйте:"
+                echo "hdfs dfs -ls ${env.HDFS_APP_PATH}"
+            }
         }
         failure {
             echo "❌ Ошибка при переносе структуры"
-            slackSend color: 'danger', message: "Failed: ${env.JOB_NAME} #${env.BUILD_NUMBER}"
+            script {
+                currentBuild.result = 'FAILURE'
+            }
+        }
+        cleanup {
+            echo "Очистка рабочих файлов..."
+            cleanWs()
         }
     }
 }
@@ -97,26 +162,13 @@ pipeline {
 def hdfsCreateDirectory(String path) {
     sh """
         curl -f -s -X PUT \
-        '${env.WEBHDFS_NAMENODE}${path}?op=MKDIRS&user.name=${env.HDFS_USER}'
+        "${env.WEBHDFS_NAMENODE}${path}?op=MKDIRS&user.name=${env.HDFS_USER}"
     """
 }
 
 def hdfsDeleteRecursive(String path) {
     sh """
         curl -f -s -X DELETE \
-        '${env.WEBHDFS_NAMENODE}${path}?op=DELETE&recursive=true&user.name=${env.HDFS_USER}' || true
-    """
-}
-
-def hdfsUploadFile(Map params) {
-    def parentDir = params.hdfsPath.substring(0, params.hdfsPath.lastIndexOf('/'))
-    hdfsCreateDirectory(parentDir)
-    
-    sh """
-        redirect_url=\$(curl -f -s -i -X PUT \
-        '${env.WEBHDFS_NAMENODE}${params.hdfsPath}?op=CREATE&user.name=${env.HDFS_USER}&overwrite=true' \
-        | grep -i '^Location:' | cut -d' ' -f2 | tr -d '\r\n')
-        
-        curl -f -s -X PUT -T "${params.localPath}" "\$redirect_url"
+        "${env.WEBHDFS_NAMENODE}${path}?op=DELETE&recursive=true&user.name=${env.HDFS_USER}" || true
     """
 }

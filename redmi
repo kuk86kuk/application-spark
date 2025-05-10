@@ -23,11 +23,89 @@ docker exec -it jenkins-jenkins-1 cat /var/jenkins_home/secrets/initialAdminPass
 
 
 
+docker exec -it airflow-airflow-webserver-1 bash
+docker exec -it airflow-airflow-webserver-1 ls -la /opt/airflow/dags
 
-
-
-
-$ docker exec airflow-airflow-1 airflow dags reserialize
+docker exec -it airflow-airflow-webserver-1  bash
+$ docker exec airflow-airflow-webserver-1 airflow dags reserialize
 помоги мне надо написать работающий код для приложения.  Я сделал пиплпй который, который принмает на сход витрину https://github.com/kuk86kuk/DataMart_transaction
 Папку sql сохроняет на hadoop, из wf делает даги для потоков загрузок. Мне надо написать спарк плиложение которые,
 который принимает sql и сохроняет их в бд (hive)
+
+
+from airflow import DAG
+from airflow.operators.bash import BashOperator
+from airflow.operators.python import PythonOperator
+from airflow.operators.dummy import DummyOperator
+from datetime import datetime, timedelta
+import requests
+
+default_args = {
+    'owner': 'airflow',
+    'depends_on_past': False,
+    'start_date': datetime(2023, 1, 1),
+    'retries': 2,
+    'retry_delay': timedelta(seconds=30),
+}
+
+def check_spark_master():
+    try:
+        # Проверяем Web UI Spark Master
+        response = requests.get('http://spark-master:8085', timeout=10)
+        if response.status_code == 200:
+            print("Spark Master Web UI доступен")
+            return True
+    except Exception as e:
+        print(f"Ошибка при проверке Spark Master: {str(e)}")
+        raise
+
+def check_spark_worker():
+    try:
+        # Можно проверить логи или другие метрики worker
+        # В этом примере просто проверяем доступность контейнера
+        response = requests.get('http://spark-worker:8081', timeout=10)
+        if response.status_code == 200:
+            print("Spark Worker Web UI доступен")
+            return True
+    except Exception as e:
+        print(f"Ошибка при проверке Spark Worker: {str(e)}")
+        raise
+
+with DAG(
+    'spark_health_check',
+    default_args=default_args,
+    description='Проверка доступности Spark кластера',
+    schedule_interval=timedelta(minutes=30),
+    catchup=False,
+) as dag:
+
+    start = DummyOperator(task_id='start')
+    
+    check_master = PythonOperator(
+        task_id='check_spark_master',
+        python_callable=check_spark_master,
+    )
+    
+    check_worker = PythonOperator(
+        task_id='check_spark_worker',
+        python_callable=check_spark_worker,
+    )
+    
+    ping_master = BashOperator(
+        task_id='ping_spark_master',
+        bash_command='ping -c 3 spark-master || exit 0',  # Не падаем при ошибке
+    )
+    
+    ping_worker = BashOperator(
+        task_id='ping_spark_worker',
+        bash_command='ping -c 3 spark-worker || exit 0',
+    )
+    
+    check_ports = BashOperator(
+        task_id='check_spark_ports',
+        bash_command='nc -zv spark-master 7077 && nc -zv spark-master 8085',
+    )
+    
+    end = DummyOperator(task_id='end')
+
+    start >> [check_master, check_worker, ping_master, ping_worker] >> check_ports >> end

@@ -135,10 +135,11 @@ pipeline {
         }.join(",\n        ")
         
         tasksContent.append("""
-    ${stageName} = PythonOperator(
+    ${stageName} = SparkSubmitOperator(
         task_id="${stageName}",
         name="${stageName}",
-        **common_spark_args,
+        application=common_spark_args['application'],
+        conn_id=common_spark_args['conn_id'],
         application_args=common_spark_args['application_args'] + [
             ${sparkArgs}
         ]
@@ -155,7 +156,7 @@ pipeline {
 
                 // Generate DAG content
                 def dagContent = """from airflow import DAG
-from airflow.operators.dummy import DummyOperator
+from airflow.providers.apache.spark.operators.spark_submit import SparkSubmitOperator
 from datetime import datetime
 
 with DAG(
@@ -192,8 +193,8 @@ with DAG(
 """
                 
                 // Write DAG file
-                writeFile file: "/var/jenkins_dags/${dagId}.py", text: dagContent
-                echo "DAG файл создан: /var/jenkins_dags/${dagId}.py"
+                writeFile file: "/opt/airflow/dags/${dagId}.py", text: dagContent
+                echo "DAG файл создан: /opt/airflow/dags/${dagId}.py"
             }
             
             echo "\n=== ИТОГИ ГЕНЕРАЦИИ DAG ==="
