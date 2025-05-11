@@ -1,56 +1,46 @@
 from config.spark_session import SparkSessionManager
-import logging
-import argparse
 
-# Настройка логирования
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+HEADER = """
+  _____  _    _ ______ _____  
+ |  __ \| |  | |  ____|  __ \ 
+ | |  | | |  | | |__  | |__) |
+ | |  | | |  | |  __| |  ___/ 
+ | |__| | |__| | |____| |     
+ |_____/ \____/|______|_|     
+"""
 
-def get_spark_config(step):
+def get_spark_config():
     return {
-        "app_name": f"MySparkApp_{step}",
-        "master": "spark://spark-master:7077",
+        "app_name": "MySparkApp",
+        "master": "local[*]",
         "spark_configs": {
             "spark.executor.memory": "4g",
             "spark.driver.memory": "2g",
-            "spark.default.parallelism": "8",
-            "spark.hadoop.fs.defaultFS": "hdfs://namenode:8020"
+            "spark.default.parallelism": "8"
         }
     }
 
-def run_step(step, datamart=None):
-    """Выполняет конкретный этап обработки"""
-    config = get_spark_config(step)
+def main():
+    # Получаем конфигурацию
+    config = get_spark_config()
+    
+    # Создаем менеджер Spark сессии
     spark_manager = SparkSessionManager(config)
     
     try:
+        # Запускаем Spark сессию
+        print(HEADER)
         spark = spark_manager.start_session()
-        logger.info(f"Starting {step} step")
         
-        if step == "start":
-            logger.info("Initialization completed")
-            print("Initialization completed")
-            
-        elif step == "process":
-            logger.info(f"Processing datamart: {datamart}")
-            print(f"Processing datamart: {datamart}")
-            # Здесь основная логика обработки
-            
-        elif step == "finish":
-            logger.info("Finalizing operations")
-            print("Finalizing operations")
-            
+        # Выводим hello
+        print(spark)
+        
+        print(HEADER)
+        # Здесь можно добавить дополнительную логику обработки данных
+        
     finally:
+        # Закрываем Spark сессию
         spark_manager.stop_session()
-
-def main():
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--env", default="dev")
-    parser.add_argument("--step", required=True)
-    parser.add_argument("--datamart")
-    args = parser.parse_args()
-    
-    run_step(args.step, args.datamart)
 
 if __name__ == "__main__":
     main()
