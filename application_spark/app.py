@@ -1,4 +1,5 @@
 from config.spark_session import SparkSessionManager
+import argparse  # Добавляем модуль для обработки аргументов
 
 HEADER = """
   _____  _    _ ______ _____  
@@ -9,8 +10,8 @@ HEADER = """
  |_____/ \____/|______|_|     
 """
 
-def get_spark_config():
-    return {
+def get_spark_config(task_id=None):  # Добавляем task_id в параметры
+    config = {
         "app_name": "MySparkApp",
         "master": "local[*]",
         "spark_configs": {
@@ -19,28 +20,48 @@ def get_spark_config():
             "spark.default.parallelism": "8"
         }
     }
+    
+    if task_id:
+        config["app_name"] = f"MySparkApp_{task_id}"  # Используем task_id в имени приложения
+    
+    return config
+
+def parse_arguments():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--env', required=True)
+    parser.add_argument('--step', required=True)
+    parser.add_argument('--datamart', required=True)
+    parser.add_argument('--task-id', required=True)  # Добавляем аргумент для task_id
+    return parser.parse_args()
 
 def main():
-    # Получаем конфигурацию
-    config = get_spark_config()
+    # Парсим аргументы командной строки
+    args = parse_arguments()
+    
+    # Получаем конфигурацию с учетом task_id
+    config = get_spark_config(args.task_id)
     
     # Создаем менеджер Spark сессии
     spark_manager = SparkSessionManager(config)
     
     try:
         # Запускаем Spark сессию
-        print(HEADER)
+        
+        print(f"Starting Spark task with ID: {args.task_id}")  # Выводим task_id
         spark = spark_manager.start_session()
         
-        # Выводим hello
-        print(spark)
-        
+
+        print(HEADER)
+        # Выводим информацию о Spark сессии
+        print(f"Spark session for task {args.task_id}:")
         print(HEADER)
         # Здесь можно добавить дополнительную логику обработки данных
+        # с использованием args.task_id если нужно
         
     finally:
         # Закрываем Spark сессию
         spark_manager.stop_session()
+        print(f"Spark task {args.task_id} completed")
 
 if __name__ == "__main__":
     main()
