@@ -1,16 +1,39 @@
-from pyspark.sql import SparkSession
+from config import get_spark_config
+from config.spark_session import SparkSessionManager
 
-# Создаем Spark сессию
-spark = SparkSession.builder \
-    .appName("SimpleSparkExample") \
-    .getOrCreate()
+def get_spark_config():
+    return {
+        "app_name": "MySparkApp",
+        "master": "local[*]",
+        "spark_configs": {
+            "spark.executor.memory": "4g",
+            "spark.driver.memory": "2g",
+            "spark.default.parallelism": "8"
+        }
+    }
 
-# Выводим "hello"
-print("hello")
+def main():
+    # Получаем конфигурацию
+    config = get_spark_config()
+    
+    # Создаем менеджер Spark сессии
+    spark_manager = SparkSessionManager(config)
+    
+    try:
+        # Запускаем Spark сессию
+        spark = spark_manager.start_session()
+        
+        # Выводим hello
+        print("hello")
+        
+        # Здесь можно добавить дополнительную логику обработки данных
+        
+    finally:
+        # Закрываем Spark сессию
+        spark_manager.stop_session()
 
-# Закрываем Spark сессию
-spark.stop()
-
+if __name__ == "__main__":
+    main()
 
 
 # import argparse
