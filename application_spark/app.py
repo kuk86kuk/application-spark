@@ -1,9 +1,9 @@
 import argparse
 from datetime import datetime
 import sys
-from application_spark.main.steps import preload, calc_stg, calc_inc, mtp, hist
-from application_spark.main.checks import check_stg, check_inc, final_checks
-from application_spark.main.config import SparkManager
+from steps import preload, calc_stg, calc_inc, mtp, hist
+from checks import check_stg, check_inc, final_checks
+from config import SparkManager
 
 # Константы для оформления
 BORDER = "=" * 60

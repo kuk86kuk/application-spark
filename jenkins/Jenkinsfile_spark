@@ -9,7 +9,7 @@ pipeline {
         )
         string(
             name: 'HDFS_BASE_PATH',
-            defaultValue: '/user/jenkins/spark-apps',
+            defaultValue: '/user/jenkins/application_spark',
             description: 'Базовый путь в HDFS для загрузки приложений'
         )
         string(
