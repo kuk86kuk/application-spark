@@ -1,4 +1,4 @@
-from SparkManager import SparkManager
+from config.SparkManager import SparkManager
 from pyspark.sql import functions as F
 from typing import Dict
 import logging
