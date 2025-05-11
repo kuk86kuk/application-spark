@@ -34,7 +34,6 @@ def parse_arguments():
     parser.add_argument('--task-id', required=True)  # Добавляем аргумент для task_id
     return parser.parse_args()
 
-_spark_session = None
 
 def main():
     args = parse_arguments()
@@ -42,38 +41,29 @@ def main():
     spark_manager = SparkSessionManager(config)
 
     try:
+        # Всегда создаем новую сессию для каждой задачи
+        spark = spark_manager.start_session()
+        print(HEADER)
+        
         if args.task_id == 'start':
             print(HEADER)
-            global _spark_session
-            _spark_session = spark_manager.start_session()
-            print(f"Spark session started for task: {args.task_id}")
-            print(f"Application ID: {_spark_session.sparkContext.applicationId}")
+            print("Инициализация Spark сессии и подготовка данных")
+            # Логика инициализации
             
         elif args.task_id == 'process':
-            if _spark_session is None:
-                raise RuntimeError("Spark session not initialized! Run 'start' task first.")
             print(HEADER)
-            print(f"Processing data using existing Spark session: {_spark_session.sparkContext.applicationId}")
-            print(HEADER)
-            # Здесь ваша основная логика обработки
+            print("Обработка данных в Spark")
+            # Основная логика обработки
             
         elif args.task_id == 'finish':
             print(HEADER)
-            if _spark_session is not None:
-                spark_manager.stop_session()
-                _spark_session = None
-                print(f"Spark session stopped for task: {args.task_id}")
-            else:
-                print("No active Spark session to stop")
-                
-    except Exception as e:
-        print(f"Error in task {args.task_id}: {str(e)}")
-        if _spark_session is not None:
+            print("Завершение работы и сохранение результатов")
+            # Логика завершения
+            
+    finally:
+        # Всегда останавливаем сессию, кроме последней задачи
+        if args.task_id != 'finish':
             spark_manager.stop_session()
-        raise
-
-if __name__ == "__main__":
-    main()
 
 # import argparse
 # from datetime import datetime
