@@ -4,7 +4,10 @@ USER root
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
         openjdk-11-jdk \
-        procps && \
+        procps \
+        libhadoop3-native \  # Для Hadoop
+        wget && \
+    wget https://repo1.maven.org/maven2/org/apache/hadoop/hadoop-aws/3.3.1/hadoop-aws-3.3.1.jar -P /opt/spark/jars/ && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 

@@ -35,6 +35,7 @@ services:
       postgres:
         condition: service_healthy
     environment:
+      - AIRFLOW__WEBSERVER__SECRET_KEY=your_secret_key_here
       - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@postgres:5432/airflow
       - AIRFLOW__CORE__FERNET_KEY=46BKJoQYlPPOexq0OhDZnIlNepKFf87WFwLbfzqDDho=
       - AIRFLOW__CORE__EXECUTOR=CeleryExecutor
@@ -60,6 +61,7 @@ services:
       - redis
       - airflow-init
     environment:
+      - AIRFLOW__WEBSERVER__SECRET_KEY=your_secret_key_here
       - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@postgres:5432/airflow
       - AIRFLOW__CORE__EXECUTOR=CeleryExecutor
       - AIRFLOW__CORE__FERNET_KEY=46BKJoQYlPPOexq0OhDZnIlNepKFf87WFwLbfzqDDho=
@@ -91,6 +93,7 @@ services:
       - redis
       - airflow-init
     environment:
+      - AIRFLOW__WEBSERVER__SECRET_KEY=your_secret_key_here
       - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@postgres:5432/airflow
       - AIRFLOW__CORE__EXECUTOR=CeleryExecutor
       - AIRFLOW__CORE__FERNET_KEY=46BKJoQYlPPOexq0OhDZnIlNepKFf87WFwLbfzqDDho=
@@ -118,6 +121,7 @@ services:
       - redis
       - airflow-init
     environment:
+      - AIRFLOW__WEBSERVER__SECRET_KEY=your_secret_key_here
       - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@postgres:5432/airflow
       - AIRFLOW__CORE__EXECUTOR=CeleryExecutor
       - AIRFLOW__CORE__FERNET_KEY=46BKJoQYlPPOexq0OhDZnIlNepKFf87WFwLbfzqDDho=
