@@ -1,5 +1,5 @@
 from config.spark_session import SparkSessionManager
-import argparse  # Добавляем модуль для обработки аргументов
+import argparse
 
 HEADER = """
   _____  _    _ ______ _____  
@@ -10,20 +10,18 @@ HEADER = """
  |_____/ \____/|______|_|     
 """
 
-def get_spark_config(task_id=None):  # Добавляем task_id в параметры
+def get_spark_config(task_id=None):
     config = {
-        "app_name": "MySparkApp",
-        "master": "local[*]",
+        "app_name": f"MySparkApp_{task_id}" if task_id else "MySparkApp",
+        "master": "spark://spark-master:7077",  # Изменено на кластерный режим
         "spark_configs": {
             "spark.executor.memory": "4g",
             "spark.driver.memory": "2g",
-            "spark.default.parallelism": "8"
+            "spark.default.parallelism": "8",
+            "spark.hadoop.fs.defaultFS": "hdfs://namenode:8020",
+            "spark.submit.deployMode": "client"
         }
     }
-    
-    if task_id:
-        config["app_name"] = f"MySparkApp_{task_id}"  # Используем task_id в имени приложения
-    
     return config
 
 def parse_arguments():
@@ -31,39 +29,53 @@ def parse_arguments():
     parser.add_argument('--env', required=True)
     parser.add_argument('--step', required=True)
     parser.add_argument('--datamart', required=True)
-    parser.add_argument('--task-id', required=True)  # Добавляем аргумент для task_id
+    parser.add_argument('--task-id', required=True)
     return parser.parse_args()
-
 
 def main():
     args = parse_arguments()
     config = get_spark_config(args.task_id)
     spark_manager = SparkSessionManager(config)
+    
+    print(HEADER)
+    print(f"Starting task: {args.task_id}")
 
     try:
-        # Всегда создаем новую сессию для каждой задачи
+        # Создаем новую сессию для каждой задачи
         spark = spark_manager.start_session()
-        print(HEADER)
-        
+        print(f"Spark session started. Application ID: {spark.sparkContext.applicationId}")
+
         if args.task_id == 'start':
             print(HEADER)
-            print("Инициализация Spark сессии и подготовка данных")
-            # Логика инициализации
+            print("Initializing data processing")
+            # Пример: чтение данных
+            # df = spark.read.parquet("hdfs://namenode:8020/data/input")
+            # df.show(5)
             
         elif args.task_id == 'process':
             print(HEADER)
-            print("Обработка данных в Spark")
-            # Основная логика обработки
+            print("Processing data")
+            # Пример: обработка данных
+            # processed = df.filter(df.value > 0)
+            # processed.show(5)
             
         elif args.task_id == 'finish':
             print(HEADER)
-            print("Завершение работы и сохранение результатов")
-            # Логика завершения
+            print("Finalizing processing")
+            # Пример: сохранение результатов
+            # df.write.parquet("hdfs://namenode:8020/data/output")
             
+    except Exception as e:
+        print(f"Error in task {args.task_id}: {str(e)}")
+        raise
     finally:
-        # Всегда останавливаем сессию, кроме последней задачи
-        if args.task_id != 'finish':
-            spark_manager.stop_session()
+        # Всегда останавливаем сессию
+        print("Stopping Spark session")
+        spark_manager.stop_session()
+        print(f"Task {args.task_id} completed")
+
+if __name__ == "__main__":
+    main()
 
 # import argparse
 # from datetime import datetime
