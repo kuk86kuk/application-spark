@@ -1,39 +1,59 @@
 from config.spark_session import SparkSessionManager
+import logging
+import argparse
 
-def get_spark_config():
+# Настройка логирования
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+def get_spark_config(step):
     return {
-        "app_name": "MySparkApp",
-        "master": "local[*]",
+        "app_name": f"MySparkApp_{step}",
+        "master": "spark://spark-master:7077",
         "spark_configs": {
             "spark.executor.memory": "4g",
             "spark.driver.memory": "2g",
-            "spark.default.parallelism": "8"
+            "spark.default.parallelism": "8",
+            "spark.hadoop.fs.defaultFS": "hdfs://namenode:8020"
         }
     }
 
-def main():
-    # Получаем конфигурацию
-    config = get_spark_config()
-    
-    # Создаем менеджер Spark сессии
+def run_step(step, datamart=None):
+    """Выполняет конкретный этап обработки"""
+    config = get_spark_config(step)
     spark_manager = SparkSessionManager(config)
     
     try:
-        # Запускаем Spark сессию
         spark = spark_manager.start_session()
+        logger.info(f"Starting {step} step")
         
-        # Выводим hello
-        print("hello")
-        
-        # Здесь можно добавить дополнительную логику обработки данных
-        
+        if step == "start":
+            logger.info("Initialization completed")
+            print("Initialization completed")
+            
+        elif step == "process":
+            logger.info(f"Processing datamart: {datamart}")
+            print(f"Processing datamart: {datamart}")
+            # Здесь основная логика обработки
+            
+        elif step == "finish":
+            logger.info("Finalizing operations")
+            print("Finalizing operations")
+            
     finally:
-        # Закрываем Spark сессию
         spark_manager.stop_session()
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--env", default="dev")
+    parser.add_argument("--step", required=True)
+    parser.add_argument("--datamart")
+    args = parser.parse_args()
+    
+    run_step(args.step, args.datamart)
 
 if __name__ == "__main__":
     main()
-
 
 # import argparse
 # from datetime import datetime
