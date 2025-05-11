@@ -34,34 +34,43 @@ def parse_arguments():
     parser.add_argument('--task-id', required=True)  # Добавляем аргумент для task_id
     return parser.parse_args()
 
-def main():
-    # Парсим аргументы командной строки
-    args = parse_arguments()
-    
-    # Получаем конфигурацию с учетом task_id
-    config = get_spark_config(args.task_id)
-    
-    # Создаем менеджер Spark сессии
-    spark_manager = SparkSessionManager(config)
-    
-    try:
-        # Запускаем Spark сессию
-        
-        print(f"Starting Spark task with ID: {args.task_id}")  # Выводим task_id
-        spark = spark_manager.start_session()
-        
+_spark_session = None
 
-        print(HEADER)
-        # Выводим информацию о Spark сессии
-        print(f"Spark session for task {args.task_id}:")
-        print(HEADER)
-        # Здесь можно добавить дополнительную логику обработки данных
-        # с использованием args.task_id если нужно
-        
-    finally:
-        # Закрываем Spark сессию
-        spark_manager.stop_session()
-        print(f"Spark task {args.task_id} completed")
+def main():
+    args = parse_arguments()
+    config = get_spark_config(args.task_id)
+    spark_manager = SparkSessionManager(config)
+
+    try:
+        if args.task_id == 'start':
+            print(HEADER)
+            global _spark_session
+            _spark_session = spark_manager.start_session()
+            print(f"Spark session started for task: {args.task_id}")
+            print(f"Application ID: {_spark_session.sparkContext.applicationId}")
+            
+        elif args.task_id == 'process':
+            if _spark_session is None:
+                raise RuntimeError("Spark session not initialized! Run 'start' task first.")
+            print(HEADER)
+            print(f"Processing data using existing Spark session: {_spark_session.sparkContext.applicationId}")
+            print(HEADER)
+            # Здесь ваша основная логика обработки
+            
+        elif args.task_id == 'finish':
+            print(HEADER)
+            if _spark_session is not None:
+                spark_manager.stop_session()
+                _spark_session = None
+                print(f"Spark session stopped for task: {args.task_id}")
+            else:
+                print("No active Spark session to stop")
+                
+    except Exception as e:
+        print(f"Error in task {args.task_id}: {str(e)}")
+        if _spark_session is not None:
+            spark_manager.stop_session()
+        raise
 
 if __name__ == "__main__":
     main()
