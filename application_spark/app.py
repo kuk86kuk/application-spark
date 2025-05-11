@@ -92,12 +92,12 @@ def main():
         elif args.step == 'stage_calc_inc':
             print_header("INCREMENT CALCULATION", args.env)
             print_step_info("INCREMENT", "Processing delta changes")
-            calc_inc.calculate(args.env)
+            calc_inc.run(args.env)
             
         elif args.step == 'stage_check_inc':
             print_header("INCREMENT VALIDATION", args.env)
             print_step_info("INCREMENT CHECK", "Business logic validation")
-            check_inc.validate(args.env)
+            check_inc.run(args.env)
             
         elif args.step == 'stage_MTP':
             print_header("MART TABLE POPULATION", args.env)
@@ -107,12 +107,12 @@ def main():
         elif args.step == 'stage_hist':
             print_header("HISTORY UPDATE", args.env)
             print_step_info("HISTORY", "Updating historical data")
-            hist.update(args.env)
+            hist.run(args.env)
             
         elif args.step == 'final_check':
             print_header("FINAL VALIDATION", args.env)
             print_step_info("FINAL CHECK", "Comprehensive data validation")
-            final_checks.run_all(args.env)
+            final_checks.run(args.env)
             
         else:
             raise ValueError(f"Unknown step: {args.step}")

@@ -4,12 +4,12 @@ pipeline {
     parameters {
         string(
             name: 'GIT_REPO_URL',
-            defaultValue: 'https://github.com/kuk86kuk/application-spark',
+            defaultValue: 'https://github.com/kuk86kuk/application_spark',
             description: 'URL Git-репозитория с конфигами'
         )
         string(
             name: 'HDFS_BASE_PATH',
-            defaultValue: '/user/jenkins/application_spark',
+            defaultValue: '/user/jenkins/spark-apps',
             description: 'Базовый путь в HDFS для загрузки приложений'
         )
         string(
@@ -34,33 +34,29 @@ pipeline {
         WEBHDFS_NAMENODE = "${params.WEBHDFS_NAMENODE}"
         HDFS_USER = "${params.HDFS_USER}"
         SPARK_APP_DIR = "${params.SPARK_APP_DIR}"
+        ZIP_FILE = "dependencies.zip"
     }
 
     stages {
-        stage('Подготовка') {
+        stage('Подготовка окружения') {
             steps {
                 script {
-                    // Проверка обязательных параметров
-                    def requiredParams = [
-                        'GIT_REPO_URL',
-                        'HDFS_BASE_PATH',
-                        'WEBHDFS_NAMENODE',
-                        'HDFS_USER',
-                        'SPARK_APP_DIR'
-                    ]
-                    
-                    requiredParams.each { param ->
-                        if (!params[param]?.trim()) {
-                            error "❌ Не задан обязательный параметр: ${param}"
+                    // Проверка и установка zip, если необходимо
+                    if (isUnix()) {
+                        def zipInstalled = sh(script: 'command -v zip || echo "not installed"', returnStdout: true).trim()
+                        if (zipInstalled == "not installed") {
+                            echo "Установка zip..."
+                            try {
+                                sh """
+                                    apt-get update -qq && \
+                                    apt-get install -y --no-install-recommends zip
+                                """
+                            } catch (Exception e) {
+                                echo "⚠️ Не удалось установить zip, попробуем использовать Python"
+                                env.USE_PYTHON_ZIP = "true"
+                            }
                         }
                     }
-                    
-                    echo "Параметры конфигурации:"
-                    echo "Git Repo URL: ${params.GIT_REPO_URL}"
-                    echo "HDFS Base Path: ${params.HDFS_BASE_PATH}"
-                    echo "WebHDFS Namenode: ${params.WEBHDFS_NAMENODE}"
-                    echo "HDFS User: ${params.HDFS_USER}"
-                    echo "Spark App Dir: ${params.SPARK_APP_DIR}"
                 }
             }
         }
@@ -76,56 +72,78 @@ pipeline {
                         credentialsId: 'github-ssh-key'
                     ]]
                 ])
-                sh 'ls -al'
             }
         }
         
         stage('Проверка структуры') {
             steps {
                 script {
-                    if (!fileExists(env.SPARK_APP_DIR)) {
-                        error "❌ Папка с Spark-приложением '${env.SPARK_APP_DIR}' не найдена"
+                    dir(env.SPARK_APP_DIR) {
+                        if (!fileExists('app.py')) {
+                            error "❌ Основной файл app.py не найден"
+                        }
+                        
+                        def requiredDirs = ['steps', 'checks', 'config']
+                        def missingDirs = requiredDirs.findAll { !fileExists(it) }
+                        if (missingDirs) {
+                            error "❌ Отсутствуют обязательные директории: ${missingDirs.join(', ')}"
+                        }
                     }
-                    
-                    def fileCount = sh(script: "find ${env.SPARK_APP_DIR} -type f | wc -l", returnStdout: true).trim()
-                    if (fileCount == "0") {
-                        error "❌ В папке ${env.SPARK_APP_DIR} не найдены файлы"
-                    }
-                    
-                    echo "Найдена папка с Spark-приложением: ${env.SPARK_APP_DIR}"
-                    echo "Количество файлов: ${fileCount}"
                 }
             }
         }
         
-        stage('Перенос в HDFS') {
+        stage('Создание архива') {
             steps {
                 script {
-                    def fullHdfsPath = "${env.HDFS_BASE_PATH}"
+                    if (env.USE_PYTHON_ZIP == "true") {
+                        echo "Создание архива с помощью Python..."
+                        sh """
+                            python3 -c "
+import os
+import zipfile
+with zipfile.ZipFile('${env.ZIP_FILE}', 'w') as zipf:
+    for folder in ['steps', 'checks', 'config']:
+        for root, dirs, files in os.walk(os.path.join('${env.SPARK_APP_DIR}', folder)):
+            for file in files:
+                zipf.write(os.path.join(root, file), 
+                          os.path.relpath(os.path.join(root, file), 
+                                        os.path.join('${env.SPARK_APP_DIR}', '..')))
+                            "
+                        """
+                    } else {
+                        echo "Создание архива с помощью zip..."
+                        sh """
+                            cd ${env.SPARK_APP_DIR} && \
+                            zip -r "../${env.ZIP_FILE}" steps checks config && \
+                            cd ..
+                        """
+                    }
                     
-                    echo "Создание HDFS директории: ${fullHdfsPath}"
-                    hdfsDeleteRecursive(fullHdfsPath)
-                    hdfsCreateDirectory(fullHdfsPath)
+                    // Проверка что архив создан
+                    if (!fileExists(env.ZIP_FILE)) {
+                        error "❌ Не удалось создать архив зависимостей"
+                    }
+                    echo "Размер архива: ${sh(script: "du -h ${env.ZIP_FILE} | cut -f1", returnStdout: true).trim()}"
+                }
+            }
+        }
+        
+        stage('Загрузка в HDFS') {
+            steps {
+                script {
+                    def hdfsAppPath = "${env.HDFS_BASE_PATH}"
                     
-                    // Используем более простой подход для загрузки файлов
-                    sh """
-                        find ${env.SPARK_APP_DIR} -type f | while read file; do
-                            relative_path="\${file#${env.SPARK_APP_DIR}/}"
-                            hdfs_path="${fullHdfsPath}/\${relative_path}"
-                            hdfs_dir="\$(dirname "\$hdfs_path")"
-                            
-                            # Создаем директорию в HDFS
-                            curl -s -X PUT "${env.WEBHDFS_NAMENODE}\${hdfs_dir}?op=MKDIRS&user.name=${env.HDFS_USER}"
-                            
-                            # Загружаем файл
-                            redirect_url=\$(curl -s -i -X PUT "${env.WEBHDFS_NAMENODE}\${hdfs_path}?op=CREATE&user.name=${env.HDFS_USER}&overwrite=true" | grep -i '^Location:' | awk '{print \$2}' | tr -d '\r\n')
-                            curl -s -X PUT -T "\$file" "\$redirect_url" && \
-                            echo "Uploaded: \$file -> \$hdfs_path" || \
-                            echo "Failed to upload: \$file"
-                        done
-                    """
+                    echo "Создание HDFS-директории: ${hdfsAppPath}"
+                    hdfsCreateDirectory(hdfsAppPath)
                     
-                    env.HDFS_APP_PATH = fullHdfsPath
+                    echo "Загрузка архива в HDFS..."
+                    uploadToHDFS(env.ZIP_FILE, "${hdfsAppPath}/${env.ZIP_FILE}")
+                    
+                    echo "Загрузка app.py в HDFS..."
+                    uploadToHDFS("${env.SPARK_APP_DIR}/app.py", "${hdfsAppPath}/app.py")
+                    
+                    env.HDFS_APP_PATH = hdfsAppPath
                 }
             }
         }
@@ -139,36 +157,51 @@ pipeline {
                     returnStdout: true
                 ).trim()
                 
-                echo "✅ Структура успешно перенесена в HDFS"
-                echo "Путь: hdfs://${namenodeHost}${env.HDFS_APP_PATH}"
-                echo "Для доступа используйте:"
-                echo "hdfs dfs -ls ${env.HDFS_APP_PATH}"
+                echo """
+                ✅ Успешно!
+                Основной файл: hdfs://${namenodeHost}${env.HDFS_APP_PATH}/app.py
+                Архив зависимостей: hdfs://${namenodeHost}${env.HDFS_APP_PATH}/${env.ZIP_FILE}
+                
+                Пример команды для запуска:
+                spark-submit \\
+                  --master spark://spark-master:7077 \\
+                  --py-files hdfs://${namenodeHost}${env.HDFS_APP_PATH}/${env.ZIP_FILE} \\
+                  hdfs://${namenodeHost}${env.HDFS_APP_PATH}/app.py
+                """
             }
         }
         failure {
-            echo "❌ Ошибка при переносе структуры"
-            script {
-                currentBuild.result = 'FAILURE'
-            }
+            echo "❌ Сборка завершилась с ошибкой"
         }
-        cleanup {
-            echo "Очистка рабочих файлов..."
+        always {
             cleanWs()
         }
     }
 }
 
-// ===== Вспомогательные функции =====
+// Вспомогательные функции
 def hdfsCreateDirectory(String path) {
     sh """
-        curl -f -s -X PUT \
-        "${env.WEBHDFS_NAMENODE}${path}?op=MKDIRS&user.name=${env.HDFS_USER}"
+        curl -s -X PUT "${env.WEBHDFS_NAMENODE}${path}?op=MKDIRS&user.name=${env.HDFS_USER}"
     """
 }
 
-def hdfsDeleteRecursive(String path) {
+def uploadToHDFS(String localFile, String hdfsPath) {
     sh """
-        curl -f -s -X DELETE \
-        "${env.WEBHDFS_NAMENODE}${path}?op=DELETE&recursive=true&user.name=${env.HDFS_USER}" || true
+        redirect_url=\$(curl -s -i -X PUT \
+          "${env.WEBHDFS_NAMENODE}${hdfsPath}?op=CREATE&user.name=${env.HDFS_USER}&overwrite=true" \
+          | grep -i '^Location:' | awk '{print \$2}' | tr -d '\r\n')
+        
+        if [ -z "\$redirect_url" ]; then
+          echo "❌ Не удалось получить URL для загрузки"
+          exit 1
+        fi
+        
+        if ! curl -s -X PUT -T "${localFile}" "\$redirect_url"; then
+          echo "❌ Ошибка загрузки файла ${localFile}"
+          exit 1
+        fi
+        
+        echo "✓ Успешно загружено: ${localFile} -> ${hdfsPath}"
     """
 }
