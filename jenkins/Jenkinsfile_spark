@@ -9,7 +9,7 @@ pipeline {
         )
         string(
             name: 'HDFS_BASE_PATH',
-            defaultValue: '/user/jenkins/spark-apps',
+            defaultValue: '/user/jenkins/application_spark',
             description: 'Базовый путь в HDFS для загрузки приложений'
         )
         string(
@@ -41,7 +41,6 @@ pipeline {
         stage('Подготовка окружения') {
             steps {
                 script {
-                    // Проверка и установка zip, если необходимо
                     if (isUnix()) {
                         def zipInstalled = sh(script: 'command -v zip || echo "not installed"', returnStdout: true).trim()
                         if (zipInstalled == "not installed") {
@@ -68,8 +67,8 @@ pipeline {
                     branches: [[name: '*/main']],
                     extensions: [],
                     userRemoteConfigs: [[
-                        url: "${params.GIT_REPO_URL}",
-                        credentialsId: 'github-ssh-key'
+                        url: 'https://github.com/kuk86kuk/application-spark.git',
+                        branch: 'main'
                     ]]
                 ])
             }
@@ -120,7 +119,6 @@ with zipfile.ZipFile('${env.ZIP_FILE}', 'w') as zipf:
                         """
                     }
                     
-                    // Проверка что архив создан
                     if (!fileExists(env.ZIP_FILE)) {
                         error "❌ Не удалось создать архив зависимостей"
                     }
@@ -136,6 +134,13 @@ with zipfile.ZipFile('${env.ZIP_FILE}', 'w') as zipf:
                     
                     echo "Создание HDFS-директории: ${hdfsAppPath}"
                     hdfsCreateDirectory(hdfsAppPath)
+                    
+                    echo "Удаление старых версий файлов из HDFS..."
+                    // Удаляем архив
+                    deleteFromHDFS("${hdfsAppPath}/${env.ZIP_FILE}")
+                    
+                    // Удаляем app.py
+                    deleteFromHDFS("${hdfsAppPath}/app.py")
                     
                     echo "Загрузка архива в HDFS..."
                     uploadToHDFS(env.ZIP_FILE, "${hdfsAppPath}/${env.ZIP_FILE}")
@@ -203,5 +208,20 @@ def uploadToHDFS(String localFile, String hdfsPath) {
         fi
         
         echo "✓ Успешно загружено: ${localFile} -> ${hdfsPath}"
+    """
+}
+
+def deleteFromHDFS(String hdfsPath) {
+    sh """
+        # Удаление файла через WebHDFS API
+        if ! curl -s -i -X DELETE \
+          "${env.WEBHDFS_NAMENODE}${hdfsPath}?op=DELETE&user.name=${env.HDFS_USER}&recursive=true" \
+          | grep -q 'HTTP/.*200'; then
+          
+          echo "⚠️ Файл не существует или ошибка при удалении: ${hdfsPath}"
+          # Не выходим с ошибкой, так как возможно файл уже удален
+        else
+          echo "✓ Успешно удалено: ${hdfsPath}"
+        fi
     """
 }
