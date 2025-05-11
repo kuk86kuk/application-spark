@@ -1,4 +1,3 @@
-from config import get_spark_config
 from config.spark_session import SparkSessionManager
 
 def get_spark_config():
