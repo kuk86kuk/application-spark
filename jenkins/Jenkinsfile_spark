@@ -82,7 +82,7 @@ pipeline {
                             error "❌ Основной файл app.py не найден"
                         }
                         
-                        def requiredDirs = ['steps', 'checks', 'config']
+                        def requiredDirs = ['steps', 'checks', 'config', 'utils']
                         def missingDirs = requiredDirs.findAll { !fileExists(it) }
                         if (missingDirs) {
                             error "❌ Отсутствуют обязательные директории: ${missingDirs.join(', ')}"
@@ -102,7 +102,7 @@ pipeline {
 import os
 import zipfile
 with zipfile.ZipFile('${env.ZIP_FILE}', 'w') as zipf:
-    for folder in ['steps', 'checks', 'config']:
+    for folder in ['steps', 'checks', 'config', 'utils']:
         for root, dirs, files in os.walk(os.path.join('${env.SPARK_APP_DIR}', folder)):
             for file in files:
                 zipf.write(os.path.join(root, file), 
@@ -114,7 +114,7 @@ with zipfile.ZipFile('${env.ZIP_FILE}', 'w') as zipf:
                         echo "Создание архива с помощью zip..."
                         sh """
                             cd ${env.SPARK_APP_DIR} && \
-                            zip -r "../${env.ZIP_FILE}" steps checks config && \
+                            zip -r "../${env.ZIP_FILE}" steps checks config utils && \
                             cd ..
                         """
                     }

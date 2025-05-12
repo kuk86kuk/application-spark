@@ -24,9 +24,11 @@ class SparkSessionManager:
     @staticmethod
     def parse_arguments():
         parser = argparse.ArgumentParser()
-        parser.add_argument('--query_mapping', required=True)
+        parser.add_argument('--env', required=True)
+        parser.add_argument('--step', required=True)
         parser.add_argument('--datamart', required=True)
-        parser.add_argument('--task_id', required=True)
+        parser.add_argument('--task-id', required=True)
+        parser.add_argument('--query_mapping', required=True)
         return parser.parse_args()
 
     def start_session(self):
