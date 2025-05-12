@@ -2,7 +2,7 @@ from pyspark.sql import SparkSession, DataFrame
 from pyspark.sql.functions import col, current_timestamp, expr, lit
 from pyspark.sql.types import StringType
 import os
-from hdfs import InsecureClient
+# from hdfs import InsecureClient
 from typing import Dict, Tuple, Optional, List, Callable, Any
 import logging
 from datetime import datetime
@@ -157,8 +157,8 @@ class Preload:
         logger.info(f"Truncating {table_schema}.{table_name}")
         try:
             location = Preload.get_table_location(spark, table_schema, table_name)
-            hdfs_client = InsecureClient("http://namenode:9870")
-            hdfs_client.delete(location, recursive=True)
+            # hdfs_client = InsecureClient("http://namenode:9870")
+            # hdfs_client.delete(location, recursive=True)
             logger.info(f"Deleted {location}")
         except Exception as ex:
             logger.error(f"Could not truncate {table_schema}.{table_name}: {str(ex)}")
