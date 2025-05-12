@@ -3,20 +3,7 @@ from utils.logger import SparkLogger
 from steps.preload import Preload
 import argparse
 
-def read_and_log_hdfs_file(spark: SparkSession, hdfs_path: str):
-    try:
-        # Чтение файла с HDFS
-        file_content = spark.sparkContext.textFile(hdfs_path).collect()
-        
-        # Вывод содержимого в лог
-        logger.info(f"Содержимое файла {hdfs_path}:")
-        for line in file_content:
-            logger.info(line)
-            
-        return True
-    except Exception as e:
-        logger.error(f"Ошибка при чтении файла {hdfs_path}: {str(e)}")
-        return False
+
 
 def main():
     args = SparkSessionManager.parse_arguments()
@@ -39,7 +26,7 @@ def main():
         file_content = spark.sparkContext.textFile(hdfs_file_path).collect()
         for line in file_content:
             print(line)
-            
+
         if args.step == 'stage_preload':
             logger.print_step_info("stage_preload")
             # Preload.run_and_save_sql_hdfs(spark, args.query_path, args.query_mapping, args.table_schema, args.table_name, args.repartition, args.partition_by, args.bucket_by, args.num_buckets,
