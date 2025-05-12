@@ -13,7 +13,7 @@ def main():
     spark = spark_manager.start_session()
 
     # Инициализация логгера
-    logger = SparkLogger(env=args.env, step_name=args.task_id)
+    logger = SparkLogger(env=args.env, step_name=args.step)
     logger.print_header()
 
 
@@ -21,22 +21,22 @@ def main():
         # Создаем новую сессию для каждой задачи
         spark = spark_manager.start_session()
 
-        if args.task_id == 'stage_preload':
+        if args.step == 'stage_preload':
             logger.print_step_info("stage_preload")
 
-        elif args.task_id == 'stage_calc_stg':
+        elif args.step == 'stage_calc_stg':
             logger.print_step_info("stage_calc_stg")
 
-        elif args.task_id == 'stage_check_stg':
+        elif args.step == 'stage_check_stg':
             logger.print_step_info("stage_check_stg")
 
-        elif args.task_id == 'stage_calc_inc':
+        elif args.step == 'stage_calc_inc':
             logger.print_step_info("stage_calc_inc")
           
-        elif args.task_id == 'stage_check_inc':
+        elif args.step == 'stage_check_inc':
             logger.print_step_info("stage_check_inc")
 
-        elif args.task_id == 'stage_MTP':
+        elif args.step == 'stage_MTP':
             logger.print_step_info("stage_MTP")
             
         elif args.step == 'stage_hist':
