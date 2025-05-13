@@ -26,7 +26,9 @@ def main():
             logger.print_step_info("stage_preload")
             
             hdfs_file_path = "hdfs://namenode:8020/datamarts/DataMart_transaction/ddl/schema.sql"
+            print(hdfs_file_path)
             file_content = spark.sparkContext.textFile(hdfs_file_path).collect()
+            print(file_content)
             for line in file_content:
                 print(line)
                 
