@@ -12,8 +12,8 @@ class SparkSessionManager:
             "app_name": f"MySparkApp_{task_id}" if task_id else "MySparkApp",
             "master": "spark://spark-master:7077",
             "spark_configs": {
-                "spark.executor.memory": "4g",
-                "spark.driver.memory": "2g",
+                "spark.executor.memory": "1g",
+                "spark.driver.memory": "1g",
                 "spark.default.parallelism": "8",
                 "spark.hadoop.fs.defaultFS": "hdfs://namenode:8020",
                 "spark.submit.deployMode": "client"
