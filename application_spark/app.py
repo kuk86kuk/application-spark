@@ -22,8 +22,8 @@ def main():
         # Создаем новую сессию для каждой задачи
         spark = spark_manager.start_session()
 
-        hdfs_file_path = "/datamarts/DataMart_transaction/ddl/schema.sql"
-        file_content = spark.sparkContext.textFile(hdfs_file_path).collect()
+        # hdfs_file_path = "/datamarts/DataMart_transaction/ddl/schema.sql"
+        # file_content = spark.sparkContext.textFile(hdfs_file_path).collect()
         for line in file_content:
             print(line)
             
