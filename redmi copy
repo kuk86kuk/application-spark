@@ -1,0 +1,372 @@
+767af9a0bacd
+*** Found local files:
+***   * /opt/airflow/logs/dag_id=spark_full_stage_processing12133/run_id=manual__2025-05-13T08:13:06.792221+00:00/task_id=spark_stage_preload/attempt=1.log
+[2025-05-13, 08:13:09 UTC] {taskinstance.py:1103} INFO - Dependencies all met for dep_context=non-requeueable deps ti=<TaskInstance: spark_full_stage_processing12133.spark_stage_preload manual__2025-05-13T08:13:06.792221+00:00 [queued]>
+[2025-05-13, 08:13:09 UTC] {taskinstance.py:1103} INFO - Dependencies all met for dep_context=requeueable deps ti=<TaskInstance: spark_full_stage_processing12133.spark_stage_preload manual__2025-05-13T08:13:06.792221+00:00 [queued]>
+[2025-05-13, 08:13:09 UTC] {taskinstance.py:1308} INFO - Starting attempt 1 of 4
+[2025-05-13, 08:13:09 UTC] {taskinstance.py:1327} INFO - Executing <Task(SparkSubmitOperator): spark_stage_preload> on 2025-05-13 08:13:06.792221+00:00
+[2025-05-13, 08:13:09 UTC] {standard_task_runner.py:57} INFO - Started process 185 to run task
+[2025-05-13, 08:13:09 UTC] {standard_task_runner.py:84} INFO - Running: ['***', 'tasks', 'run', 'spark_full_stage_processing12133', 'spark_stage_preload', 'manual__2025-05-13T08:13:06.792221+00:00', '--job-id', '243', '--raw', '--subdir', 'DAGS_FOLDER/DataMart_transaction_kpi_calc.py', '--cfg-path', '/tmp/tmps8o3wze_']
+[2025-05-13, 08:13:09 UTC] {standard_task_runner.py:85} INFO - Job 243: Subtask spark_stage_preload
+[2025-05-13, 08:13:09 UTC] {task_command.py:410} INFO - Running <TaskInstance: spark_full_stage_processing12133.spark_stage_preload manual__2025-05-13T08:13:06.792221+00:00 [running]> on host 767af9a0bacd
+[2025-05-13, 08:13:09 UTC] {taskinstance.py:1547} INFO - Exporting env vars: AIRFLOW_CTX_DAG_OWNER='***' AIRFLOW_CTX_DAG_ID='spark_full_stage_processing12133' AIRFLOW_CTX_TASK_ID='spark_stage_preload' AIRFLOW_CTX_EXECUTION_DATE='2025-05-13T08:13:06.792221+00:00' AIRFLOW_CTX_TRY_NUMBER='1' AIRFLOW_CTX_DAG_RUN_ID='manual__2025-05-13T08:13:06.792221+00:00'
+[2025-05-13, 08:13:09 UTC] {base.py:73} INFO - Using connection ID 'spark_default' for task execution.
+[2025-05-13, 08:13:09 UTC] {spark_submit.py:339} INFO - Spark-Submit cmd: spark-submit --master spark-master:7077 --conf spark.master=spark://spark-master:7077 --conf spark.submit.deployMode=client --conf spark.driver.memory=4g --conf spark.executor.memory=4g --conf spark.executor.instances=2 --conf spark.executor.cores=2 --conf spark.network.timeout=800s --conf spark.executor.heartbeatInterval=60s --conf spark.ui.showConsoleProgress=true --conf spark.hadoop.fs.defaultFS=hdfs://namenode:8020 --name arrow-spark --verbose hdfs://namenode:8020/user/jenkins/application_spark/app.py --env prod --step preload --task-id stage_preload
+[2025-05-13, 08:13:12 UTC] {spark_submit.py:490} INFO - Using properties file: null
+[2025-05-13, 08:13:12 UTC] {spark_submit.py:490} INFO - Parsed arguments:
+[2025-05-13, 08:13:12 UTC] {spark_submit.py:490} INFO - master                  spark-master:7077
+[2025-05-13, 08:13:12 UTC] {spark_submit.py:490} INFO - remote                  null
+[2025-05-13, 08:13:12 UTC] {spark_submit.py:490} INFO - deployMode              client
+[2025-05-13, 08:13:12 UTC] {spark_submit.py:490} INFO - executorMemory          4g
+[2025-05-13, 08:13:12 UTC] {spark_submit.py:490} INFO - executorCores           2
+[2025-05-13, 08:13:12 UTC] {spark_submit.py:490} INFO - totalExecutorCores      null
+[2025-05-13, 08:13:12 UTC] {spark_submit.py:490} INFO - propertiesFile          null
+[2025-05-13, 08:13:12 UTC] {spark_submit.py:490} INFO - driverMemory            4g
+[2025-05-13, 08:13:12 UTC] {spark_submit.py:490} INFO - driverCores             null
+[2025-05-13, 08:13:12 UTC] {spark_submit.py:490} INFO - driverExtraClassPath    null
+[2025-05-13, 08:13:12 UTC] {spark_submit.py:490} INFO - driverExtraLibraryPath  null
+[2025-05-13, 08:13:12 UTC] {spark_submit.py:490} INFO - driverExtraJavaOptions  null
+[2025-05-13, 08:13:12 UTC] {spark_submit.py:490} INFO - supervise               false
+[2025-05-13, 08:13:12 UTC] {spark_submit.py:490} INFO - queue                   null
+[2025-05-13, 08:13:12 UTC] {spark_submit.py:490} INFO - numExecutors            2
+[2025-05-13, 08:13:12 UTC] {spark_submit.py:490} INFO - files                   null
+[2025-05-13, 08:13:12 UTC] {spark_submit.py:490} INFO - pyFiles                 null
+[2025-05-13, 08:13:12 UTC] {spark_submit.py:490} INFO - archives                null
+[2025-05-13, 08:13:12 UTC] {spark_submit.py:490} INFO - mainClass               null
+[2025-05-13, 08:13:12 UTC] {spark_submit.py:490} INFO - primaryResource         hdfs://namenode:8020/user/jenkins/application_spark/app.py
+[2025-05-13, 08:13:12 UTC] {spark_submit.py:490} INFO - name                    arrow-spark
+[2025-05-13, 08:13:12 UTC] {spark_submit.py:490} INFO - childArgs               [--env prod --step preload --task-id stage_preload]
+[2025-05-13, 08:13:12 UTC] {spark_submit.py:490} INFO - jars                    null
+[2025-05-13, 08:13:12 UTC] {spark_submit.py:490} INFO - packages                null
+[2025-05-13, 08:13:12 UTC] {spark_submit.py:490} INFO - packagesExclusions      null
+[2025-05-13, 08:13:12 UTC] {spark_submit.py:490} INFO - repositories            null
+[2025-05-13, 08:13:12 UTC] {spark_submit.py:490} INFO - verbose                 true
+[2025-05-13, 08:13:12 UTC] {spark_submit.py:490} INFO - 
+[2025-05-13, 08:13:12 UTC] {spark_submit.py:490} INFO - Spark properties used, including those specified through
+[2025-05-13, 08:13:12 UTC] {spark_submit.py:490} INFO - --conf and those from the properties file null:
+[2025-05-13, 08:13:12 UTC] {spark_submit.py:490} INFO - (spark.driver.memory,4g)
+[2025-05-13, 08:13:12 UTC] {spark_submit.py:490} INFO - (spark.executor.cores,2)
+[2025-05-13, 08:13:12 UTC] {spark_submit.py:490} INFO - (spark.executor.heartbeatInterval,60s)
+[2025-05-13, 08:13:12 UTC] {spark_submit.py:490} INFO - (spark.executor.instances,2)
+[2025-05-13, 08:13:12 UTC] {spark_submit.py:490} INFO - (spark.executor.memory,4g)
+[2025-05-13, 08:13:12 UTC] {spark_submit.py:490} INFO - (spark.hadoop.fs.defaultFS,hdfs://namenode:8020)
+[2025-05-13, 08:13:12 UTC] {spark_submit.py:490} INFO - (spark.master,spark://spark-master:7077)
+[2025-05-13, 08:13:12 UTC] {spark_submit.py:490} INFO - (spark.network.timeout,800s)
+[2025-05-13, 08:13:12 UTC] {spark_submit.py:490} INFO - (spark.submit.deployMode,client)
+[2025-05-13, 08:13:12 UTC] {spark_submit.py:490} INFO - (spark.ui.showConsoleProgress,true)
+[2025-05-13, 08:13:12 UTC] {spark_submit.py:490} INFO - 
+[2025-05-13, 08:13:13 UTC] {spark_submit.py:490} INFO - 25/05/13 08:13:13 WARN NativeCodeLoader: Unable to load native-hadoop library for your platform... using builtin-java classes where applicable
+[2025-05-13, 08:14:14 UTC] {spark_submit.py:490} INFO - 25/05/13 08:14:14 WARN BlockReaderFactory: I/O error constructing remote block reader.
+[2025-05-13, 08:14:14 UTC] {spark_submit.py:490} INFO - org.apache.hadoop.net.ConnectTimeoutException: 60000 millis timeout while waiting for channel to be ready for connect. ch : java.nio.channels.SocketChannel[connection-pending remote=/172.18.0.4:9866]
+[2025-05-13, 08:14:14 UTC] {spark_submit.py:490} INFO - at org.apache.hadoop.net.NetUtils.connect(NetUtils.java:589)
+[2025-05-13, 08:14:14 UTC] {spark_submit.py:490} INFO - at org.apache.hadoop.hdfs.DFSClient.newConnectedPeer(DFSClient.java:3033)
+[2025-05-13, 08:14:14 UTC] {spark_submit.py:490} INFO - at org.apache.hadoop.hdfs.client.impl.BlockReaderFactory.nextTcpPeer(BlockReaderFactory.java:829)
+[2025-05-13, 08:14:14 UTC] {spark_submit.py:490} INFO - at org.apache.hadoop.hdfs.client.impl.BlockReaderFactory.getRemoteBlockReaderFromTcp(BlockReaderFactory.java:754)
+[2025-05-13, 08:14:14 UTC] {spark_submit.py:490} INFO - at org.apache.hadoop.hdfs.client.impl.BlockReaderFactory.build(BlockReaderFactory.java:381)
+[2025-05-13, 08:14:14 UTC] {spark_submit.py:490} INFO - at org.apache.hadoop.hdfs.DFSInputStream.getBlockReader(DFSInputStream.java:755)
+[2025-05-13, 08:14:14 UTC] {spark_submit.py:490} INFO - at org.apache.hadoop.hdfs.DFSInputStream.blockSeekTo(DFSInputStream.java:685)
+[2025-05-13, 08:14:14 UTC] {spark_submit.py:490} INFO - at org.apache.hadoop.hdfs.DFSInputStream.readWithStrategy(DFSInputStream.java:884)
+[2025-05-13, 08:14:14 UTC] {spark_submit.py:490} INFO - at org.apache.hadoop.hdfs.DFSInputStream.read(DFSInputStream.java:957)
+[2025-05-13, 08:14:14 UTC] {spark_submit.py:490} INFO - at java.base/java.io.DataInputStream.read(DataInputStream.java:100)
+[2025-05-13, 08:14:14 UTC] {spark_submit.py:490} INFO - at org.apache.spark.util.Utils$.$anonfun$copyStream$1(Utils.scala:369)
+[2025-05-13, 08:14:14 UTC] {spark_submit.py:490} INFO - at scala.runtime.java8.JFunction0$mcJ$sp.apply(JFunction0$mcJ$sp.java:23)
+[2025-05-13, 08:14:14 UTC] {spark_submit.py:490} INFO - at org.apache.spark.util.Utils$.tryWithSafeFinally(Utils.scala:1529)
+[2025-05-13, 08:14:14 UTC] {spark_submit.py:490} INFO - at org.apache.spark.util.Utils$.copyStream(Utils.scala:378)
+[2025-05-13, 08:14:14 UTC] {spark_submit.py:490} INFO - at org.apache.spark.util.Utils$.downloadFile(Utils.scala:670)
+[2025-05-13, 08:14:14 UTC] {spark_submit.py:490} INFO - at org.apache.spark.util.Utils$.fetchHcfsFile(Utils.scala:844)
+[2025-05-13, 08:14:14 UTC] {spark_submit.py:490} INFO - at org.apache.spark.util.Utils$.doFetchFile(Utils.scala:818)
+[2025-05-13, 08:14:14 UTC] {spark_submit.py:490} INFO - at org.apache.spark.util.DependencyUtils$.downloadFile(DependencyUtils.scala:264)
+[2025-05-13, 08:14:14 UTC] {spark_submit.py:490} INFO - at org.apache.spark.deploy.SparkSubmit.$anonfun$prepareSubmitEnvironment$8(SparkSubmit.scala:402)
+[2025-05-13, 08:14:14 UTC] {spark_submit.py:490} INFO - at scala.Option.map(Option.scala:230)
+[2025-05-13, 08:14:14 UTC] {spark_submit.py:490} INFO - at org.apache.spark.deploy.SparkSubmit.prepareSubmitEnvironment(SparkSubmit.scala:402)
+[2025-05-13, 08:14:14 UTC] {spark_submit.py:490} INFO - at org.apache.spark.deploy.SparkSubmit.org$apache$spark$deploy$SparkSubmit$$runMain(SparkSubmit.scala:955)
+[2025-05-13, 08:14:14 UTC] {spark_submit.py:490} INFO - at org.apache.spark.deploy.SparkSubmit.doRunMain$1(SparkSubmit.scala:192)
+[2025-05-13, 08:14:14 UTC] {spark_submit.py:490} INFO - at org.apache.spark.deploy.SparkSubmit.submit(SparkSubmit.scala:215)
+[2025-05-13, 08:14:14 UTC] {spark_submit.py:490} INFO - at org.apache.spark.deploy.SparkSubmit.doSubmit(SparkSubmit.scala:91)
+[2025-05-13, 08:14:14 UTC] {spark_submit.py:490} INFO - at org.apache.spark.deploy.SparkSubmit$$anon$2.doSubmit(SparkSubmit.scala:1111)
+[2025-05-13, 08:14:14 UTC] {spark_submit.py:490} INFO - at org.apache.spark.deploy.SparkSubmit$.main(SparkSubmit.scala:1120)
+[2025-05-13, 08:14:14 UTC] {spark_submit.py:490} INFO - at org.apache.spark.deploy.SparkSubmit.main(SparkSubmit.scala)
+[2025-05-13, 08:14:14 UTC] {spark_submit.py:490} INFO - 25/05/13 08:14:14 WARN DFSClient: Failed to connect to /172.18.0.4:9866 for file /user/jenkins/application_spark/app.py for block BP-1687151274-172.19.0.2-1746011425259:blk_1073742113_1289, add to deadNodes and continue.
+[2025-05-13, 08:14:14 UTC] {spark_submit.py:490} INFO - org.apache.hadoop.net.ConnectTimeoutException: 60000 millis timeout while waiting for channel to be ready for connect. ch : java.nio.channels.SocketChannel[connection-pending remote=/172.18.0.4:9866]
+[2025-05-13, 08:14:14 UTC] {spark_submit.py:490} INFO - at org.apache.hadoop.net.NetUtils.connect(NetUtils.java:589)
+[2025-05-13, 08:14:14 UTC] {spark_submit.py:490} INFO - at org.apache.hadoop.hdfs.DFSClient.newConnectedPeer(DFSClient.java:3033)
+[2025-05-13, 08:14:14 UTC] {spark_submit.py:490} INFO - at org.apache.hadoop.hdfs.client.impl.BlockReaderFactory.nextTcpPeer(BlockReaderFactory.java:829)
+[2025-05-13, 08:14:14 UTC] {spark_submit.py:490} INFO - at org.apache.hadoop.hdfs.client.impl.BlockReaderFactory.getRemoteBlockReaderFromTcp(BlockReaderFactory.java:754)
+[2025-05-13, 08:14:14 UTC] {spark_submit.py:490} INFO - at org.apache.hadoop.hdfs.client.impl.BlockReaderFactory.build(BlockReaderFactory.java:381)
+[2025-05-13, 08:14:14 UTC] {spark_submit.py:490} INFO - at org.apache.hadoop.hdfs.DFSInputStream.getBlockReader(DFSInputStream.java:755)
+[2025-05-13, 08:14:14 UTC] {spark_submit.py:490} INFO - at org.apache.hadoop.hdfs.DFSInputStream.blockSeekTo(DFSInputStream.java:685)
+[2025-05-13, 08:14:14 UTC] {spark_submit.py:490} INFO - at org.apache.hadoop.hdfs.DFSInputStream.readWithStrategy(DFSInputStream.java:884)
+[2025-05-13, 08:14:14 UTC] {spark_submit.py:490} INFO - at org.apache.hadoop.hdfs.DFSInputStream.read(DFSInputStream.java:957)
+[2025-05-13, 08:14:14 UTC] {spark_submit.py:490} INFO - at java.base/java.io.DataInputStream.read(DataInputStream.java:100)
+[2025-05-13, 08:14:14 UTC] {spark_submit.py:490} INFO - at org.apache.spark.util.Utils$.$anonfun$copyStream$1(Utils.scala:369)
+[2025-05-13, 08:14:14 UTC] {spark_submit.py:490} INFO - at scala.runtime.java8.JFunction0$mcJ$sp.apply(JFunction0$mcJ$sp.java:23)
+[2025-05-13, 08:14:14 UTC] {spark_submit.py:490} INFO - at org.apache.spark.util.Utils$.tryWithSafeFinally(Utils.scala:1529)
+[2025-05-13, 08:14:14 UTC] {spark_submit.py:490} INFO - at org.apache.spark.util.Utils$.copyStream(Utils.scala:378)
+[2025-05-13, 08:14:14 UTC] {spark_submit.py:490} INFO - at org.apache.spark.util.Utils$.downloadFile(Utils.scala:670)
+[2025-05-13, 08:14:14 UTC] {spark_submit.py:490} INFO - at org.apache.spark.util.Utils$.fetchHcfsFile(Utils.scala:844)
+[2025-05-13, 08:14:14 UTC] {spark_submit.py:490} INFO - at org.apache.spark.util.Utils$.doFetchFile(Utils.scala:818)
+[2025-05-13, 08:14:14 UTC] {spark_submit.py:490} INFO - at org.apache.spark.util.DependencyUtils$.downloadFile(DependencyUtils.scala:264)
+[2025-05-13, 08:14:14 UTC] {spark_submit.py:490} INFO - at org.apache.spark.deploy.SparkSubmit.$anonfun$prepareSubmitEnvironment$8(SparkSubmit.scala:402)
+[2025-05-13, 08:14:14 UTC] {spark_submit.py:490} INFO - at scala.Option.map(Option.scala:230)
+[2025-05-13, 08:14:14 UTC] {spark_submit.py:490} INFO - at org.apache.spark.deploy.SparkSubmit.prepareSubmitEnvironment(SparkSubmit.scala:402)
+[2025-05-13, 08:14:14 UTC] {spark_submit.py:490} INFO - at org.apache.spark.deploy.SparkSubmit.org$apache$spark$deploy$SparkSubmit$$runMain(SparkSubmit.scala:955)
+[2025-05-13, 08:14:14 UTC] {spark_submit.py:490} INFO - at org.apache.spark.deploy.SparkSubmit.doRunMain$1(SparkSubmit.scala:192)
+[2025-05-13, 08:14:14 UTC] {spark_submit.py:490} INFO - at org.apache.spark.deploy.SparkSubmit.submit(SparkSubmit.scala:215)
+[2025-05-13, 08:14:14 UTC] {spark_submit.py:490} INFO - at org.apache.spark.deploy.SparkSubmit.doSubmit(SparkSubmit.scala:91)
+[2025-05-13, 08:14:14 UTC] {spark_submit.py:490} INFO - at org.apache.spark.deploy.SparkSubmit$$anon$2.doSubmit(SparkSubmit.scala:1111)
+[2025-05-13, 08:14:14 UTC] {spark_submit.py:490} INFO - at org.apache.spark.deploy.SparkSubmit$.main(SparkSubmit.scala:1120)
+[2025-05-13, 08:14:14 UTC] {spark_submit.py:490} INFO - at org.apache.spark.deploy.SparkSubmit.main(SparkSubmit.scala)
+[2025-05-13, 08:14:14 UTC] {spark_submit.py:490} INFO - 25/05/13 08:14:14 WARN DFSClient: No live nodes contain block BP-1687151274-172.19.0.2-1746011425259:blk_1073742113_1289 after checking nodes = [DatanodeInfoWithStorage[172.18.0.4:9866,DS-71aa063c-facd-46e8-aff0-d41874ad6b10,DISK]], ignoredNodes = null
+[2025-05-13, 08:14:14 UTC] {spark_submit.py:490} INFO - 25/05/13 08:14:14 WARN DFSClient: DFS chooseDataNode: got # 1 IOException, will wait for 2789.8898720995753 msec.
+[2025-05-13, 08:15:17 UTC] {spark_submit.py:490} INFO - 25/05/13 08:15:17 WARN BlockReaderFactory: I/O error constructing remote block reader.
+[2025-05-13, 08:15:17 UTC] {spark_submit.py:490} INFO - org.apache.hadoop.net.ConnectTimeoutException: 60000 millis timeout while waiting for channel to be ready for connect. ch : java.nio.channels.SocketChannel[connection-pending remote=/172.18.0.4:9866]
+[2025-05-13, 08:15:17 UTC] {spark_submit.py:490} INFO - at org.apache.hadoop.net.NetUtils.connect(NetUtils.java:589)
+[2025-05-13, 08:15:17 UTC] {spark_submit.py:490} INFO - at org.apache.hadoop.hdfs.DFSClient.newConnectedPeer(DFSClient.java:3033)
+[2025-05-13, 08:15:17 UTC] {spark_submit.py:490} INFO - at org.apache.hadoop.hdfs.client.impl.BlockReaderFactory.nextTcpPeer(BlockReaderFactory.java:829)
+[2025-05-13, 08:15:17 UTC] {spark_submit.py:490} INFO - at org.apache.hadoop.hdfs.client.impl.BlockReaderFactory.getRemoteBlockReaderFromTcp(BlockReaderFactory.java:754)
+[2025-05-13, 08:15:17 UTC] {spark_submit.py:490} INFO - at org.apache.hadoop.hdfs.client.impl.BlockReaderFactory.build(BlockReaderFactory.java:381)
+[2025-05-13, 08:15:17 UTC] {spark_submit.py:490} INFO - at org.apache.hadoop.hdfs.DFSInputStream.getBlockReader(DFSInputStream.java:755)
+[2025-05-13, 08:15:17 UTC] {spark_submit.py:490} INFO - at org.apache.hadoop.hdfs.DFSInputStream.blockSeekTo(DFSInputStream.java:685)
+[2025-05-13, 08:15:17 UTC] {spark_submit.py:490} INFO - at org.apache.hadoop.hdfs.DFSInputStream.readWithStrategy(DFSInputStream.java:884)
+[2025-05-13, 08:15:17 UTC] {spark_submit.py:490} INFO - at org.apache.hadoop.hdfs.DFSInputStream.read(DFSInputStream.java:957)
+[2025-05-13, 08:15:17 UTC] {spark_submit.py:490} INFO - at java.base/java.io.DataInputStream.read(DataInputStream.java:100)
+[2025-05-13, 08:15:17 UTC] {spark_submit.py:490} INFO - at org.apache.spark.util.Utils$.$anonfun$copyStream$1(Utils.scala:369)
+[2025-05-13, 08:15:17 UTC] {spark_submit.py:490} INFO - at scala.runtime.java8.JFunction0$mcJ$sp.apply(JFunction0$mcJ$sp.java:23)
+[2025-05-13, 08:15:17 UTC] {spark_submit.py:490} INFO - at org.apache.spark.util.Utils$.tryWithSafeFinally(Utils.scala:1529)
+[2025-05-13, 08:15:17 UTC] {spark_submit.py:490} INFO - at org.apache.spark.util.Utils$.copyStream(Utils.scala:378)
+[2025-05-13, 08:15:17 UTC] {spark_submit.py:490} INFO - at org.apache.spark.util.Utils$.downloadFile(Utils.scala:670)
+[2025-05-13, 08:15:17 UTC] {spark_submit.py:490} INFO - at org.apache.spark.util.Utils$.fetchHcfsFile(Utils.scala:844)
+[2025-05-13, 08:15:17 UTC] {spark_submit.py:490} INFO - at org.apache.spark.util.Utils$.doFetchFile(Utils.scala:818)
+[2025-05-13, 08:15:17 UTC] {spark_submit.py:490} INFO - at org.apache.spark.util.DependencyUtils$.downloadFile(DependencyUtils.scala:264)
+[2025-05-13, 08:15:17 UTC] {spark_submit.py:490} INFO - at org.apache.spark.deploy.SparkSubmit.$anonfun$prepareSubmitEnvironment$8(SparkSubmit.scala:402)
+[2025-05-13, 08:15:17 UTC] {spark_submit.py:490} INFO - at scala.Option.map(Option.scala:230)
+[2025-05-13, 08:15:17 UTC] {spark_submit.py:490} INFO - at org.apache.spark.deploy.SparkSubmit.prepareSubmitEnvironment(SparkSubmit.scala:402)
+[2025-05-13, 08:15:17 UTC] {spark_submit.py:490} INFO - at org.apache.spark.deploy.SparkSubmit.org$apache$spark$deploy$SparkSubmit$$runMain(SparkSubmit.scala:955)
+[2025-05-13, 08:15:17 UTC] {spark_submit.py:490} INFO - at org.apache.spark.deploy.SparkSubmit.doRunMain$1(SparkSubmit.scala:192)
+[2025-05-13, 08:15:17 UTC] {spark_submit.py:490} INFO - at org.apache.spark.deploy.SparkSubmit.submit(SparkSubmit.scala:215)
+[2025-05-13, 08:15:17 UTC] {spark_submit.py:490} INFO - at org.apache.spark.deploy.SparkSubmit.doSubmit(SparkSubmit.scala:91)
+[2025-05-13, 08:15:17 UTC] {spark_submit.py:490} INFO - at org.apache.spark.deploy.SparkSubmit$$anon$2.doSubmit(SparkSubmit.scala:1111)
+[2025-05-13, 08:15:17 UTC] {spark_submit.py:490} INFO - at org.apache.spark.deploy.SparkSubmit$.main(SparkSubmit.scala:1120)
+[2025-05-13, 08:15:17 UTC] {spark_submit.py:490} INFO - at org.apache.spark.deploy.SparkSubmit.main(SparkSubmit.scala)
+[2025-05-13, 08:15:17 UTC] {spark_submit.py:490} INFO - 25/05/13 08:15:17 WARN DFSClient: Failed to connect to /172.18.0.4:9866 for file /user/jenkins/application_spark/app.py for block BP-1687151274-172.19.0.2-1746011425259:blk_1073742113_1289, add to deadNodes and continue.
+[2025-05-13, 08:15:17 UTC] {spark_submit.py:490} INFO - org.apache.hadoop.net.ConnectTimeoutException: 60000 millis timeout while waiting for channel to be ready for connect. ch : java.nio.channels.SocketChannel[connection-pending remote=/172.18.0.4:9866]
+[2025-05-13, 08:15:17 UTC] {spark_submit.py:490} INFO - at org.apache.hadoop.net.NetUtils.connect(NetUtils.java:589)
+[2025-05-13, 08:15:17 UTC] {spark_submit.py:490} INFO - at org.apache.hadoop.hdfs.DFSClient.newConnectedPeer(DFSClient.java:3033)
+[2025-05-13, 08:15:17 UTC] {spark_submit.py:490} INFO - at org.apache.hadoop.hdfs.client.impl.BlockReaderFactory.nextTcpPeer(BlockReaderFactory.java:829)
+[2025-05-13, 08:15:17 UTC] {spark_submit.py:490} INFO - at org.apache.hadoop.hdfs.client.impl.BlockReaderFactory.getRemoteBlockReaderFromTcp(BlockReaderFactory.java:754)
+[2025-05-13, 08:15:17 UTC] {spark_submit.py:490} INFO - at org.apache.hadoop.hdfs.client.impl.BlockReaderFactory.build(BlockReaderFactory.java:381)
+[2025-05-13, 08:15:17 UTC] {spark_submit.py:490} INFO - at org.apache.hadoop.hdfs.DFSInputStream.getBlockReader(DFSInputStream.java:755)
+[2025-05-13, 08:15:17 UTC] {spark_submit.py:490} INFO - at org.apache.hadoop.hdfs.DFSInputStream.blockSeekTo(DFSInputStream.java:685)
+[2025-05-13, 08:15:17 UTC] {spark_submit.py:490} INFO - at org.apache.hadoop.hdfs.DFSInputStream.readWithStrategy(DFSInputStream.java:884)
+[2025-05-13, 08:15:17 UTC] {spark_submit.py:490} INFO - at org.apache.hadoop.hdfs.DFSInputStream.read(DFSInputStream.java:957)
+[2025-05-13, 08:15:17 UTC] {spark_submit.py:490} INFO - at java.base/java.io.DataInputStream.read(DataInputStream.java:100)
+[2025-05-13, 08:15:17 UTC] {spark_submit.py:490} INFO - at org.apache.spark.util.Utils$.$anonfun$copyStream$1(Utils.scala:369)
+[2025-05-13, 08:15:17 UTC] {spark_submit.py:490} INFO - at scala.runtime.java8.JFunction0$mcJ$sp.apply(JFunction0$mcJ$sp.java:23)
+[2025-05-13, 08:15:17 UTC] {spark_submit.py:490} INFO - at org.apache.spark.util.Utils$.tryWithSafeFinally(Utils.scala:1529)
+[2025-05-13, 08:15:17 UTC] {spark_submit.py:490} INFO - at org.apache.spark.util.Utils$.copyStream(Utils.scala:378)
+[2025-05-13, 08:15:17 UTC] {spark_submit.py:490} INFO - at org.apache.spark.util.Utils$.downloadFile(Utils.scala:670)
+[2025-05-13, 08:15:17 UTC] {spark_submit.py:490} INFO - at org.apache.spark.util.Utils$.fetchHcfsFile(Utils.scala:844)
+[2025-05-13, 08:15:17 UTC] {spark_submit.py:490} INFO - at org.apache.spark.util.Utils$.doFetchFile(Utils.scala:818)
+[2025-05-13, 08:15:17 UTC] {spark_submit.py:490} INFO - at org.apache.spark.util.DependencyUtils$.downloadFile(DependencyUtils.scala:264)
+[2025-05-13, 08:15:17 UTC] {spark_submit.py:490} INFO - at org.apache.spark.deploy.SparkSubmit.$anonfun$prepareSubmitEnvironment$8(SparkSubmit.scala:402)
+[2025-05-13, 08:15:17 UTC] {spark_submit.py:490} INFO - at scala.Option.map(Option.scala:230)
+[2025-05-13, 08:15:17 UTC] {spark_submit.py:490} INFO - at org.apache.spark.deploy.SparkSubmit.prepareSubmitEnvironment(SparkSubmit.scala:402)
+[2025-05-13, 08:15:17 UTC] {spark_submit.py:490} INFO - at org.apache.spark.deploy.SparkSubmit.org$apache$spark$deploy$SparkSubmit$$runMain(SparkSubmit.scala:955)
+[2025-05-13, 08:15:17 UTC] {spark_submit.py:490} INFO - at org.apache.spark.deploy.SparkSubmit.doRunMain$1(SparkSubmit.scala:192)
+[2025-05-13, 08:15:17 UTC] {spark_submit.py:490} INFO - at org.apache.spark.deploy.SparkSubmit.submit(SparkSubmit.scala:215)
+[2025-05-13, 08:15:17 UTC] {spark_submit.py:490} INFO - at org.apache.spark.deploy.SparkSubmit.doSubmit(SparkSubmit.scala:91)
+[2025-05-13, 08:15:17 UTC] {spark_submit.py:490} INFO - at org.apache.spark.deploy.SparkSubmit$$anon$2.doSubmit(SparkSubmit.scala:1111)
+[2025-05-13, 08:15:17 UTC] {spark_submit.py:490} INFO - at org.apache.spark.deploy.SparkSubmit$.main(SparkSubmit.scala:1120)
+[2025-05-13, 08:15:17 UTC] {spark_submit.py:490} INFO - at org.apache.spark.deploy.SparkSubmit.main(SparkSubmit.scala)
+[2025-05-13, 08:15:17 UTC] {spark_submit.py:490} INFO - 25/05/13 08:15:17 WARN DFSClient: No live nodes contain block BP-1687151274-172.19.0.2-1746011425259:blk_1073742113_1289 after checking nodes = [DatanodeInfoWithStorage[172.18.0.4:9866,DS-71aa063c-facd-46e8-aff0-d41874ad6b10,DISK]], ignoredNodes = null
+[2025-05-13, 08:15:17 UTC] {spark_submit.py:490} INFO - 25/05/13 08:15:17 WARN DFSClient: DFS chooseDataNode: got # 2 IOException, will wait for 4280.2016857041035 msec.
+[2025-05-13, 08:16:21 UTC] {spark_submit.py:490} INFO - 25/05/13 08:16:21 WARN BlockReaderFactory: I/O error constructing remote block reader.
+[2025-05-13, 08:16:21 UTC] {spark_submit.py:490} INFO - org.apache.hadoop.net.ConnectTimeoutException: 60000 millis timeout while waiting for channel to be ready for connect. ch : java.nio.channels.SocketChannel[connection-pending remote=/172.18.0.4:9866]
+[2025-05-13, 08:16:21 UTC] {spark_submit.py:490} INFO - at org.apache.hadoop.net.NetUtils.connect(NetUtils.java:589)
+[2025-05-13, 08:16:21 UTC] {spark_submit.py:490} INFO - at org.apache.hadoop.hdfs.DFSClient.newConnectedPeer(DFSClient.java:3033)
+[2025-05-13, 08:16:21 UTC] {spark_submit.py:490} INFO - at org.apache.hadoop.hdfs.client.impl.BlockReaderFactory.nextTcpPeer(BlockReaderFactory.java:829)
+[2025-05-13, 08:16:21 UTC] {spark_submit.py:490} INFO - at org.apache.hadoop.hdfs.client.impl.BlockReaderFactory.getRemoteBlockReaderFromTcp(BlockReaderFactory.java:754)
+[2025-05-13, 08:16:21 UTC] {spark_submit.py:490} INFO - at org.apache.hadoop.hdfs.client.impl.BlockReaderFactory.build(BlockReaderFactory.java:381)
+[2025-05-13, 08:16:21 UTC] {spark_submit.py:490} INFO - at org.apache.hadoop.hdfs.DFSInputStream.getBlockReader(DFSInputStream.java:755)
+[2025-05-13, 08:16:21 UTC] {spark_submit.py:490} INFO - at org.apache.hadoop.hdfs.DFSInputStream.blockSeekTo(DFSInputStream.java:685)
+[2025-05-13, 08:16:21 UTC] {spark_submit.py:490} INFO - at org.apache.hadoop.hdfs.DFSInputStream.readWithStrategy(DFSInputStream.java:884)
+[2025-05-13, 08:16:21 UTC] {spark_submit.py:490} INFO - at org.apache.hadoop.hdfs.DFSInputStream.read(DFSInputStream.java:957)
+[2025-05-13, 08:16:21 UTC] {spark_submit.py:490} INFO - at java.base/java.io.DataInputStream.read(DataInputStream.java:100)
+[2025-05-13, 08:16:21 UTC] {spark_submit.py:490} INFO - at org.apache.spark.util.Utils$.$anonfun$copyStream$1(Utils.scala:369)
+[2025-05-13, 08:16:21 UTC] {spark_submit.py:490} INFO - at scala.runtime.java8.JFunction0$mcJ$sp.apply(JFunction0$mcJ$sp.java:23)
+[2025-05-13, 08:16:21 UTC] {spark_submit.py:490} INFO - at org.apache.spark.util.Utils$.tryWithSafeFinally(Utils.scala:1529)
+[2025-05-13, 08:16:21 UTC] {spark_submit.py:490} INFO - at org.apache.spark.util.Utils$.copyStream(Utils.scala:378)
+[2025-05-13, 08:16:21 UTC] {spark_submit.py:490} INFO - at org.apache.spark.util.Utils$.downloadFile(Utils.scala:670)
+[2025-05-13, 08:16:21 UTC] {spark_submit.py:490} INFO - at org.apache.spark.util.Utils$.fetchHcfsFile(Utils.scala:844)
+[2025-05-13, 08:16:21 UTC] {spark_submit.py:490} INFO - at org.apache.spark.util.Utils$.doFetchFile(Utils.scala:818)
+[2025-05-13, 08:16:21 UTC] {spark_submit.py:490} INFO - at org.apache.spark.util.DependencyUtils$.downloadFile(DependencyUtils.scala:264)
+[2025-05-13, 08:16:21 UTC] {spark_submit.py:490} INFO - at org.apache.spark.deploy.SparkSubmit.$anonfun$prepareSubmitEnvironment$8(SparkSubmit.scala:402)
+[2025-05-13, 08:16:21 UTC] {spark_submit.py:490} INFO - at scala.Option.map(Option.scala:230)
+[2025-05-13, 08:16:21 UTC] {spark_submit.py:490} INFO - at org.apache.spark.deploy.SparkSubmit.prepareSubmitEnvironment(SparkSubmit.scala:402)
+[2025-05-13, 08:16:21 UTC] {spark_submit.py:490} INFO - at org.apache.spark.deploy.SparkSubmit.org$apache$spark$deploy$SparkSubmit$$runMain(SparkSubmit.scala:955)
+[2025-05-13, 08:16:21 UTC] {spark_submit.py:490} INFO - at org.apache.spark.deploy.SparkSubmit.doRunMain$1(SparkSubmit.scala:192)
+[2025-05-13, 08:16:21 UTC] {spark_submit.py:490} INFO - at org.apache.spark.deploy.SparkSubmit.submit(SparkSubmit.scala:215)
+[2025-05-13, 08:16:21 UTC] {spark_submit.py:490} INFO - at org.apache.spark.deploy.SparkSubmit.doSubmit(SparkSubmit.scala:91)
+[2025-05-13, 08:16:21 UTC] {spark_submit.py:490} INFO - at org.apache.spark.deploy.SparkSubmit$$anon$2.doSubmit(SparkSubmit.scala:1111)
+[2025-05-13, 08:16:21 UTC] {spark_submit.py:490} INFO - at org.apache.spark.deploy.SparkSubmit$.main(SparkSubmit.scala:1120)
+[2025-05-13, 08:16:21 UTC] {spark_submit.py:490} INFO - at org.apache.spark.deploy.SparkSubmit.main(SparkSubmit.scala)
+[2025-05-13, 08:16:21 UTC] {spark_submit.py:490} INFO - 25/05/13 08:16:21 WARN DFSClient: Failed to connect to /172.18.0.4:9866 for file /user/jenkins/application_spark/app.py for block BP-1687151274-172.19.0.2-1746011425259:blk_1073742113_1289, add to deadNodes and continue.
+[2025-05-13, 08:16:21 UTC] {spark_submit.py:490} INFO - org.apache.hadoop.net.ConnectTimeoutException: 60000 millis timeout while waiting for channel to be ready for connect. ch : java.nio.channels.SocketChannel[connection-pending remote=/172.18.0.4:9866]
+[2025-05-13, 08:16:21 UTC] {spark_submit.py:490} INFO - at org.apache.hadoop.net.NetUtils.connect(NetUtils.java:589)
+[2025-05-13, 08:16:21 UTC] {spark_submit.py:490} INFO - at org.apache.hadoop.hdfs.DFSClient.newConnectedPeer(DFSClient.java:3033)
+[2025-05-13, 08:16:21 UTC] {spark_submit.py:490} INFO - at org.apache.hadoop.hdfs.client.impl.BlockReaderFactory.nextTcpPeer(BlockReaderFactory.java:829)
+[2025-05-13, 08:16:21 UTC] {spark_submit.py:490} INFO - at org.apache.hadoop.hdfs.client.impl.BlockReaderFactory.getRemoteBlockReaderFromTcp(BlockReaderFactory.java:754)
+[2025-05-13, 08:16:21 UTC] {spark_submit.py:490} INFO - at org.apache.hadoop.hdfs.client.impl.BlockReaderFactory.build(BlockReaderFactory.java:381)
+[2025-05-13, 08:16:21 UTC] {spark_submit.py:490} INFO - at org.apache.hadoop.hdfs.DFSInputStream.getBlockReader(DFSInputStream.java:755)
+[2025-05-13, 08:16:21 UTC] {spark_submit.py:490} INFO - at org.apache.hadoop.hdfs.DFSInputStream.blockSeekTo(DFSInputStream.java:685)
+[2025-05-13, 08:16:21 UTC] {spark_submit.py:490} INFO - at org.apache.hadoop.hdfs.DFSInputStream.readWithStrategy(DFSInputStream.java:884)
+[2025-05-13, 08:16:21 UTC] {spark_submit.py:490} INFO - at org.apache.hadoop.hdfs.DFSInputStream.read(DFSInputStream.java:957)
+[2025-05-13, 08:16:21 UTC] {spark_submit.py:490} INFO - at java.base/java.io.DataInputStream.read(DataInputStream.java:100)
+[2025-05-13, 08:16:21 UTC] {spark_submit.py:490} INFO - at org.apache.spark.util.Utils$.$anonfun$copyStream$1(Utils.scala:369)
+[2025-05-13, 08:16:21 UTC] {spark_submit.py:490} INFO - at scala.runtime.java8.JFunction0$mcJ$sp.apply(JFunction0$mcJ$sp.java:23)
+[2025-05-13, 08:16:21 UTC] {spark_submit.py:490} INFO - at org.apache.spark.util.Utils$.tryWithSafeFinally(Utils.scala:1529)
+[2025-05-13, 08:16:21 UTC] {spark_submit.py:490} INFO - at org.apache.spark.util.Utils$.copyStream(Utils.scala:378)
+[2025-05-13, 08:16:21 UTC] {spark_submit.py:490} INFO - at org.apache.spark.util.Utils$.downloadFile(Utils.scala:670)
+[2025-05-13, 08:16:21 UTC] {spark_submit.py:490} INFO - at org.apache.spark.util.Utils$.fetchHcfsFile(Utils.scala:844)
+[2025-05-13, 08:16:21 UTC] {spark_submit.py:490} INFO - at org.apache.spark.util.Utils$.doFetchFile(Utils.scala:818)
+[2025-05-13, 08:16:21 UTC] {spark_submit.py:490} INFO - at org.apache.spark.util.DependencyUtils$.downloadFile(DependencyUtils.scala:264)
+[2025-05-13, 08:16:21 UTC] {spark_submit.py:490} INFO - at org.apache.spark.deploy.SparkSubmit.$anonfun$prepareSubmitEnvironment$8(SparkSubmit.scala:402)
+[2025-05-13, 08:16:21 UTC] {spark_submit.py:490} INFO - at scala.Option.map(Option.scala:230)
+[2025-05-13, 08:16:21 UTC] {spark_submit.py:490} INFO - at org.apache.spark.deploy.SparkSubmit.prepareSubmitEnvironment(SparkSubmit.scala:402)
+[2025-05-13, 08:16:21 UTC] {spark_submit.py:490} INFO - at org.apache.spark.deploy.SparkSubmit.org$apache$spark$deploy$SparkSubmit$$runMain(SparkSubmit.scala:955)
+[2025-05-13, 08:16:21 UTC] {spark_submit.py:490} INFO - at org.apache.spark.deploy.SparkSubmit.doRunMain$1(SparkSubmit.scala:192)
+[2025-05-13, 08:16:21 UTC] {spark_submit.py:490} INFO - at org.apache.spark.deploy.SparkSubmit.submit(SparkSubmit.scala:215)
+[2025-05-13, 08:16:21 UTC] {spark_submit.py:490} INFO - at org.apache.spark.deploy.SparkSubmit.doSubmit(SparkSubmit.scala:91)
+[2025-05-13, 08:16:21 UTC] {spark_submit.py:490} INFO - at org.apache.spark.deploy.SparkSubmit$$anon$2.doSubmit(SparkSubmit.scala:1111)
+[2025-05-13, 08:16:21 UTC] {spark_submit.py:490} INFO - at org.apache.spark.deploy.SparkSubmit$.main(SparkSubmit.scala:1120)
+[2025-05-13, 08:16:21 UTC] {spark_submit.py:490} INFO - at org.apache.spark.deploy.SparkSubmit.main(SparkSubmit.scala)
+[2025-05-13, 08:16:21 UTC] {spark_submit.py:490} INFO - 25/05/13 08:16:21 WARN DFSClient: No live nodes contain block BP-1687151274-172.19.0.2-1746011425259:blk_1073742113_1289 after checking nodes = [DatanodeInfoWithStorage[172.18.0.4:9866,DS-71aa063c-facd-46e8-aff0-d41874ad6b10,DISK]], ignoredNodes = null
+[2025-05-13, 08:16:21 UTC] {spark_submit.py:490} INFO - 25/05/13 08:16:21 WARN DFSClient: DFS chooseDataNode: got # 3 IOException, will wait for 6637.995749058466 msec.
+[2025-05-13, 08:17:28 UTC] {spark_submit.py:490} INFO - 25/05/13 08:17:28 WARN BlockReaderFactory: I/O error constructing remote block reader.
+[2025-05-13, 08:17:28 UTC] {spark_submit.py:490} INFO - org.apache.hadoop.net.ConnectTimeoutException: 60000 millis timeout while waiting for channel to be ready for connect. ch : java.nio.channels.SocketChannel[connection-pending remote=/172.18.0.4:9866]
+[2025-05-13, 08:17:28 UTC] {spark_submit.py:490} INFO - at org.apache.hadoop.net.NetUtils.connect(NetUtils.java:589)
+[2025-05-13, 08:17:28 UTC] {spark_submit.py:490} INFO - at org.apache.hadoop.hdfs.DFSClient.newConnectedPeer(DFSClient.java:3033)
+[2025-05-13, 08:17:28 UTC] {spark_submit.py:490} INFO - at org.apache.hadoop.hdfs.client.impl.BlockReaderFactory.nextTcpPeer(BlockReaderFactory.java:829)
+[2025-05-13, 08:17:28 UTC] {spark_submit.py:490} INFO - at org.apache.hadoop.hdfs.client.impl.BlockReaderFactory.getRemoteBlockReaderFromTcp(BlockReaderFactory.java:754)
+[2025-05-13, 08:17:28 UTC] {spark_submit.py:490} INFO - at org.apache.hadoop.hdfs.client.impl.BlockReaderFactory.build(BlockReaderFactory.java:381)
+[2025-05-13, 08:17:28 UTC] {spark_submit.py:490} INFO - at org.apache.hadoop.hdfs.DFSInputStream.getBlockReader(DFSInputStream.java:755)
+[2025-05-13, 08:17:28 UTC] {spark_submit.py:490} INFO - at org.apache.hadoop.hdfs.DFSInputStream.blockSeekTo(DFSInputStream.java:685)
+[2025-05-13, 08:17:28 UTC] {spark_submit.py:490} INFO - at org.apache.hadoop.hdfs.DFSInputStream.readWithStrategy(DFSInputStream.java:884)
+[2025-05-13, 08:17:28 UTC] {spark_submit.py:490} INFO - at org.apache.hadoop.hdfs.DFSInputStream.read(DFSInputStream.java:957)
+[2025-05-13, 08:17:28 UTC] {spark_submit.py:490} INFO - at java.base/java.io.DataInputStream.read(DataInputStream.java:100)
+[2025-05-13, 08:17:28 UTC] {spark_submit.py:490} INFO - at org.apache.spark.util.Utils$.$anonfun$copyStream$1(Utils.scala:369)
+[2025-05-13, 08:17:28 UTC] {spark_submit.py:490} INFO - at scala.runtime.java8.JFunction0$mcJ$sp.apply(JFunction0$mcJ$sp.java:23)
+[2025-05-13, 08:17:28 UTC] {spark_submit.py:490} INFO - at org.apache.spark.util.Utils$.tryWithSafeFinally(Utils.scala:1529)
+[2025-05-13, 08:17:28 UTC] {spark_submit.py:490} INFO - at org.apache.spark.util.Utils$.copyStream(Utils.scala:378)
+[2025-05-13, 08:17:28 UTC] {spark_submit.py:490} INFO - at org.apache.spark.util.Utils$.downloadFile(Utils.scala:670)
+[2025-05-13, 08:17:28 UTC] {spark_submit.py:490} INFO - at org.apache.spark.util.Utils$.fetchHcfsFile(Utils.scala:844)
+[2025-05-13, 08:17:28 UTC] {spark_submit.py:490} INFO - at org.apache.spark.util.Utils$.doFetchFile(Utils.scala:818)
+[2025-05-13, 08:17:28 UTC] {spark_submit.py:490} INFO - at org.apache.spark.util.DependencyUtils$.downloadFile(DependencyUtils.scala:264)
+[2025-05-13, 08:17:28 UTC] {spark_submit.py:490} INFO - at org.apache.spark.deploy.SparkSubmit.$anonfun$prepareSubmitEnvironment$8(SparkSubmit.scala:402)
+[2025-05-13, 08:17:28 UTC] {spark_submit.py:490} INFO - at scala.Option.map(Option.scala:230)
+[2025-05-13, 08:17:28 UTC] {spark_submit.py:490} INFO - at org.apache.spark.deploy.SparkSubmit.prepareSubmitEnvironment(SparkSubmit.scala:402)
+[2025-05-13, 08:17:28 UTC] {spark_submit.py:490} INFO - at org.apache.spark.deploy.SparkSubmit.org$apache$spark$deploy$SparkSubmit$$runMain(SparkSubmit.scala:955)
+[2025-05-13, 08:17:28 UTC] {spark_submit.py:490} INFO - at org.apache.spark.deploy.SparkSubmit.doRunMain$1(SparkSubmit.scala:192)
+[2025-05-13, 08:17:28 UTC] {spark_submit.py:490} INFO - at org.apache.spark.deploy.SparkSubmit.submit(SparkSubmit.scala:215)
+[2025-05-13, 08:17:28 UTC] {spark_submit.py:490} INFO - at org.apache.spark.deploy.SparkSubmit.doSubmit(SparkSubmit.scala:91)
+[2025-05-13, 08:17:28 UTC] {spark_submit.py:490} INFO - at org.apache.spark.deploy.SparkSubmit$$anon$2.doSubmit(SparkSubmit.scala:1111)
+[2025-05-13, 08:17:28 UTC] {spark_submit.py:490} INFO - at org.apache.spark.deploy.SparkSubmit$.main(SparkSubmit.scala:1120)
+[2025-05-13, 08:17:28 UTC] {spark_submit.py:490} INFO - at org.apache.spark.deploy.SparkSubmit.main(SparkSubmit.scala)
+[2025-05-13, 08:17:28 UTC] {spark_submit.py:490} INFO - 25/05/13 08:17:28 WARN DFSClient: Failed to connect to /172.18.0.4:9866 for file /user/jenkins/application_spark/app.py for block BP-1687151274-172.19.0.2-1746011425259:blk_1073742113_1289, add to deadNodes and continue.
+[2025-05-13, 08:17:28 UTC] {spark_submit.py:490} INFO - org.apache.hadoop.net.ConnectTimeoutException: 60000 millis timeout while waiting for channel to be ready for connect. ch : java.nio.channels.SocketChannel[connection-pending remote=/172.18.0.4:9866]
+[2025-05-13, 08:17:28 UTC] {spark_submit.py:490} INFO - at org.apache.hadoop.net.NetUtils.connect(NetUtils.java:589)
+[2025-05-13, 08:17:28 UTC] {spark_submit.py:490} INFO - at org.apache.hadoop.hdfs.DFSClient.newConnectedPeer(DFSClient.java:3033)
+[2025-05-13, 08:17:28 UTC] {spark_submit.py:490} INFO - at org.apache.hadoop.hdfs.client.impl.BlockReaderFactory.nextTcpPeer(BlockReaderFactory.java:829)
+[2025-05-13, 08:17:28 UTC] {spark_submit.py:490} INFO - at org.apache.hadoop.hdfs.client.impl.BlockReaderFactory.getRemoteBlockReaderFromTcp(BlockReaderFactory.java:754)
+[2025-05-13, 08:17:28 UTC] {spark_submit.py:490} INFO - at org.apache.hadoop.hdfs.client.impl.BlockReaderFactory.build(BlockReaderFactory.java:381)
+[2025-05-13, 08:17:28 UTC] {spark_submit.py:490} INFO - at org.apache.hadoop.hdfs.DFSInputStream.getBlockReader(DFSInputStream.java:755)
+[2025-05-13, 08:17:28 UTC] {spark_submit.py:490} INFO - at org.apache.hadoop.hdfs.DFSInputStream.blockSeekTo(DFSInputStream.java:685)
+[2025-05-13, 08:17:28 UTC] {spark_submit.py:490} INFO - at org.apache.hadoop.hdfs.DFSInputStream.readWithStrategy(DFSInputStream.java:884)
+[2025-05-13, 08:17:28 UTC] {spark_submit.py:490} INFO - at org.apache.hadoop.hdfs.DFSInputStream.read(DFSInputStream.java:957)
+[2025-05-13, 08:17:28 UTC] {spark_submit.py:490} INFO - at java.base/java.io.DataInputStream.read(DataInputStream.java:100)
+[2025-05-13, 08:17:28 UTC] {spark_submit.py:490} INFO - at org.apache.spark.util.Utils$.$anonfun$copyStream$1(Utils.scala:369)
+[2025-05-13, 08:17:28 UTC] {spark_submit.py:490} INFO - at scala.runtime.java8.JFunction0$mcJ$sp.apply(JFunction0$mcJ$sp.java:23)
+[2025-05-13, 08:17:28 UTC] {spark_submit.py:490} INFO - at org.apache.spark.util.Utils$.tryWithSafeFinally(Utils.scala:1529)
+[2025-05-13, 08:17:28 UTC] {spark_submit.py:490} INFO - at org.apache.spark.util.Utils$.copyStream(Utils.scala:378)
+[2025-05-13, 08:17:28 UTC] {spark_submit.py:490} INFO - at org.apache.spark.util.Utils$.downloadFile(Utils.scala:670)
+[2025-05-13, 08:17:28 UTC] {spark_submit.py:490} INFO - at org.apache.spark.util.Utils$.fetchHcfsFile(Utils.scala:844)
+[2025-05-13, 08:17:28 UTC] {spark_submit.py:490} INFO - at org.apache.spark.util.Utils$.doFetchFile(Utils.scala:818)
+[2025-05-13, 08:17:28 UTC] {spark_submit.py:490} INFO - at org.apache.spark.util.DependencyUtils$.downloadFile(DependencyUtils.scala:264)
+[2025-05-13, 08:17:28 UTC] {spark_submit.py:490} INFO - at org.apache.spark.deploy.SparkSubmit.$anonfun$prepareSubmitEnvironment$8(SparkSubmit.scala:402)
+[2025-05-13, 08:17:28 UTC] {spark_submit.py:490} INFO - at scala.Option.map(Option.scala:230)
+[2025-05-13, 08:17:28 UTC] {spark_submit.py:490} INFO - at org.apache.spark.deploy.SparkSubmit.prepareSubmitEnvironment(SparkSubmit.scala:402)
+[2025-05-13, 08:17:28 UTC] {spark_submit.py:490} INFO - at org.apache.spark.deploy.SparkSubmit.org$apache$spark$deploy$SparkSubmit$$runMain(SparkSubmit.scala:955)
+[2025-05-13, 08:17:28 UTC] {spark_submit.py:490} INFO - at org.apache.spark.deploy.SparkSubmit.doRunMain$1(SparkSubmit.scala:192)
+[2025-05-13, 08:17:28 UTC] {spark_submit.py:490} INFO - at org.apache.spark.deploy.SparkSubmit.submit(SparkSubmit.scala:215)
+[2025-05-13, 08:17:28 UTC] {spark_submit.py:490} INFO - at org.apache.spark.deploy.SparkSubmit.doSubmit(SparkSubmit.scala:91)
+[2025-05-13, 08:17:28 UTC] {spark_submit.py:490} INFO - at org.apache.spark.deploy.SparkSubmit$$anon$2.doSubmit(SparkSubmit.scala:1111)
+[2025-05-13, 08:17:28 UTC] {spark_submit.py:490} INFO - at org.apache.spark.deploy.SparkSubmit$.main(SparkSubmit.scala:1120)
+[2025-05-13, 08:17:28 UTC] {spark_submit.py:490} INFO - at org.apache.spark.deploy.SparkSubmit.main(SparkSubmit.scala)
+[2025-05-13, 08:17:28 UTC] {spark_submit.py:490} INFO - 25/05/13 08:17:28 WARN DFSClient: No live nodes contain block BP-1687151274-172.19.0.2-1746011425259:blk_1073742113_1289 after checking nodes = [DatanodeInfoWithStorage[172.18.0.4:9866,DS-71aa063c-facd-46e8-aff0-d41874ad6b10,DISK]], ignoredNodes = null
+[2025-05-13, 08:17:28 UTC] {spark_submit.py:490} INFO - 25/05/13 08:17:28 WARN DFSClient: Could not obtain block: BP-1687151274-172.19.0.2-1746011425259:blk_1073742113_1289 file=/user/jenkins/application_spark/app.py No live nodes contain current block Block locations: DatanodeInfoWithStorage[172.18.0.4:9866,DS-71aa063c-facd-46e8-aff0-d41874ad6b10,DISK] Dead nodes:  DatanodeInfoWithStorage[172.18.0.4:9866,DS-71aa063c-facd-46e8-aff0-d41874ad6b10,DISK]. Throwing a BlockMissingException
+[2025-05-13, 08:17:28 UTC] {spark_submit.py:490} INFO - 25/05/13 08:17:28 WARN DFSClient: No live nodes contain block BP-1687151274-172.19.0.2-1746011425259:blk_1073742113_1289 after checking nodes = [DatanodeInfoWithStorage[172.18.0.4:9866,DS-71aa063c-facd-46e8-aff0-d41874ad6b10,DISK]], ignoredNodes = null
+[2025-05-13, 08:17:28 UTC] {spark_submit.py:490} INFO - 25/05/13 08:17:28 WARN DFSClient: Could not obtain block: BP-1687151274-172.19.0.2-1746011425259:blk_1073742113_1289 file=/user/jenkins/application_spark/app.py No live nodes contain current block Block locations: DatanodeInfoWithStorage[172.18.0.4:9866,DS-71aa063c-facd-46e8-aff0-d41874ad6b10,DISK] Dead nodes:  DatanodeInfoWithStorage[172.18.0.4:9866,DS-71aa063c-facd-46e8-aff0-d41874ad6b10,DISK]. Throwing a BlockMissingException
+[2025-05-13, 08:17:28 UTC] {spark_submit.py:490} INFO - 25/05/13 08:17:28 WARN DFSClient: DFS Read
+[2025-05-13, 08:17:28 UTC] {spark_submit.py:490} INFO - org.apache.hadoop.hdfs.BlockMissingException: Could not obtain block: BP-1687151274-172.19.0.2-1746011425259:blk_1073742113_1289 file=/user/jenkins/application_spark/app.py No live nodes contain current block Block locations: DatanodeInfoWithStorage[172.18.0.4:9866,DS-71aa063c-facd-46e8-aff0-d41874ad6b10,DISK] Dead nodes:  DatanodeInfoWithStorage[172.18.0.4:9866,DS-71aa063c-facd-46e8-aff0-d41874ad6b10,DISK]
+[2025-05-13, 08:17:28 UTC] {spark_submit.py:490} INFO - at org.apache.hadoop.hdfs.DFSInputStream.refetchLocations(DFSInputStream.java:1007)
+[2025-05-13, 08:17:28 UTC] {spark_submit.py:490} INFO - at org.apache.hadoop.hdfs.DFSInputStream.chooseDataNode(DFSInputStream.java:990)
+[2025-05-13, 08:17:28 UTC] {spark_submit.py:490} INFO - at org.apache.hadoop.hdfs.DFSInputStream.chooseDataNode(DFSInputStream.java:969)
+[2025-05-13, 08:17:28 UTC] {spark_submit.py:490} INFO - at org.apache.hadoop.hdfs.DFSInputStream.blockSeekTo(DFSInputStream.java:677)
+[2025-05-13, 08:17:28 UTC] {spark_submit.py:490} INFO - at org.apache.hadoop.hdfs.DFSInputStream.readWithStrategy(DFSInputStream.java:884)
+[2025-05-13, 08:17:28 UTC] {spark_submit.py:490} INFO - at org.apache.hadoop.hdfs.DFSInputStream.read(DFSInputStream.java:957)
+[2025-05-13, 08:17:28 UTC] {spark_submit.py:490} INFO - at java.base/java.io.DataInputStream.read(DataInputStream.java:100)
+[2025-05-13, 08:17:28 UTC] {spark_submit.py:490} INFO - at org.apache.spark.util.Utils$.$anonfun$copyStream$1(Utils.scala:369)
+[2025-05-13, 08:17:28 UTC] {spark_submit.py:490} INFO - at scala.runtime.java8.JFunction0$mcJ$sp.apply(JFunction0$mcJ$sp.java:23)
+[2025-05-13, 08:17:28 UTC] {spark_submit.py:490} INFO - at org.apache.spark.util.Utils$.tryWithSafeFinally(Utils.scala:1529)
+[2025-05-13, 08:17:28 UTC] {spark_submit.py:490} INFO - at org.apache.spark.util.Utils$.copyStream(Utils.scala:378)
+[2025-05-13, 08:17:28 UTC] {spark_submit.py:490} INFO - at org.apache.spark.util.Utils$.downloadFile(Utils.scala:670)
+[2025-05-13, 08:17:28 UTC] {spark_submit.py:490} INFO - at org.apache.spark.util.Utils$.fetchHcfsFile(Utils.scala:844)
+[2025-05-13, 08:17:28 UTC] {spark_submit.py:490} INFO - at org.apache.spark.util.Utils$.doFetchFile(Utils.scala:818)
+[2025-05-13, 08:17:28 UTC] {spark_submit.py:490} INFO - at org.apache.spark.util.DependencyUtils$.downloadFile(DependencyUtils.scala:264)
+[2025-05-13, 08:17:28 UTC] {spark_submit.py:490} INFO - at org.apache.spark.deploy.SparkSubmit.$anonfun$prepareSubmitEnvironment$8(SparkSubmit.scala:402)
+[2025-05-13, 08:17:28 UTC] {spark_submit.py:490} INFO - at scala.Option.map(Option.scala:230)
+[2025-05-13, 08:17:28 UTC] {spark_submit.py:490} INFO - at org.apache.spark.deploy.SparkSubmit.prepareSubmitEnvironment(SparkSubmit.scala:402)
+[2025-05-13, 08:17:28 UTC] {spark_submit.py:490} INFO - at org.apache.spark.deploy.SparkSubmit.org$apache$spark$deploy$SparkSubmit$$runMain(SparkSubmit.scala:955)
+[2025-05-13, 08:17:28 UTC] {spark_submit.py:490} INFO - at org.apache.spark.deploy.SparkSubmit.doRunMain$1(SparkSubmit.scala:192)
+[2025-05-13, 08:17:28 UTC] {spark_submit.py:490} INFO - at org.apache.spark.deploy.SparkSubmit.submit(SparkSubmit.scala:215)
+[2025-05-13, 08:17:28 UTC] {spark_submit.py:490} INFO - at org.apache.spark.deploy.SparkSubmit.doSubmit(SparkSubmit.scala:91)
+[2025-05-13, 08:17:28 UTC] {spark_submit.py:490} INFO - at org.apache.spark.deploy.SparkSubmit$$anon$2.doSubmit(SparkSubmit.scala:1111)
+[2025-05-13, 08:17:28 UTC] {spark_submit.py:490} INFO - at org.apache.spark.deploy.SparkSubmit$.main(SparkSubmit.scala:1120)
+[2025-05-13, 08:17:28 UTC] {spark_submit.py:490} INFO - at org.apache.spark.deploy.SparkSubmit.main(SparkSubmit.scala)
+[2025-05-13, 08:17:28 UTC] {spark_submit.py:490} INFO - Exception in thread "main" org.apache.hadoop.hdfs.BlockMissingException: Could not obtain block: BP-1687151274-172.19.0.2-1746011425259:blk_1073742113_1289 file=/user/jenkins/application_spark/app.py No live nodes contain current block Block locations: DatanodeInfoWithStorage[172.18.0.4:9866,DS-71aa063c-facd-46e8-aff0-d41874ad6b10,DISK] Dead nodes:  DatanodeInfoWithStorage[172.18.0.4:9866,DS-71aa063c-facd-46e8-aff0-d41874ad6b10,DISK]
+[2025-05-13, 08:17:28 UTC] {spark_submit.py:490} INFO - at org.apache.hadoop.hdfs.DFSInputStream.refetchLocations(DFSInputStream.java:1007)
+[2025-05-13, 08:17:28 UTC] {spark_submit.py:490} INFO - at org.apache.hadoop.hdfs.DFSInputStream.chooseDataNode(DFSInputStream.java:990)
+[2025-05-13, 08:17:28 UTC] {spark_submit.py:490} INFO - at org.apache.hadoop.hdfs.DFSInputStream.chooseDataNode(DFSInputStream.java:969)
+[2025-05-13, 08:17:28 UTC] {spark_submit.py:490} INFO - at org.apache.hadoop.hdfs.DFSInputStream.blockSeekTo(DFSInputStream.java:677)
+[2025-05-13, 08:17:28 UTC] {spark_submit.py:490} INFO - at org.apache.hadoop.hdfs.DFSInputStream.readWithStrategy(DFSInputStream.java:884)
+[2025-05-13, 08:17:28 UTC] {spark_submit.py:490} INFO - at org.apache.hadoop.hdfs.DFSInputStream.read(DFSInputStream.java:957)
+[2025-05-13, 08:17:28 UTC] {spark_submit.py:490} INFO - at java.base/java.io.DataInputStream.read(DataInputStream.java:100)
+[2025-05-13, 08:17:28 UTC] {spark_submit.py:490} INFO - at org.apache.spark.util.Utils$.$anonfun$copyStream$1(Utils.scala:369)
+[2025-05-13, 08:17:28 UTC] {spark_submit.py:490} INFO - at scala.runtime.java8.JFunction0$mcJ$sp.apply(JFunction0$mcJ$sp.java:23)
+[2025-05-13, 08:17:28 UTC] {spark_submit.py:490} INFO - at org.apache.spark.util.Utils$.tryWithSafeFinally(Utils.scala:1529)
+[2025-05-13, 08:17:28 UTC] {spark_submit.py:490} INFO - at org.apache.spark.util.Utils$.copyStream(Utils.scala:378)
+[2025-05-13, 08:17:28 UTC] {spark_submit.py:490} INFO - at org.apache.spark.util.Utils$.downloadFile(Utils.scala:670)
+[2025-05-13, 08:17:28 UTC] {spark_submit.py:490} INFO - at org.apache.spark.util.Utils$.fetchHcfsFile(Utils.scala:844)
+[2025-05-13, 08:17:28 UTC] {spark_submit.py:490} INFO - at org.apache.spark.util.Utils$.doFetchFile(Utils.scala:818)
+[2025-05-13, 08:17:28 UTC] {spark_submit.py:490} INFO - at org.apache.spark.util.DependencyUtils$.downloadFile(DependencyUtils.scala:264)
+[2025-05-13, 08:17:28 UTC] {spark_submit.py:490} INFO - at org.apache.spark.deploy.SparkSubmit.$anonfun$prepareSubmitEnvironment$8(SparkSubmit.scala:402)
+[2025-05-13, 08:17:28 UTC] {spark_submit.py:490} INFO - at scala.Option.map(Option.scala:230)
+[2025-05-13, 08:17:28 UTC] {spark_submit.py:490} INFO - at org.apache.spark.deploy.SparkSubmit.prepareSubmitEnvironment(SparkSubmit.scala:402)
+[2025-05-13, 08:17:28 UTC] {spark_submit.py:490} INFO - at org.apache.spark.deploy.SparkSubmit.org$apache$spark$deploy$SparkSubmit$$runMain(SparkSubmit.scala:955)
+[2025-05-13, 08:17:28 UTC] {spark_submit.py:490} INFO - at org.apache.spark.deploy.SparkSubmit.doRunMain$1(SparkSubmit.scala:192)
+[2025-05-13, 08:17:28 UTC] {spark_submit.py:490} INFO - at org.apache.spark.deploy.SparkSubmit.submit(SparkSubmit.scala:215)
+[2025-05-13, 08:17:28 UTC] {spark_submit.py:490} INFO - at org.apache.spark.deploy.SparkSubmit.doSubmit(SparkSubmit.scala:91)
+[2025-05-13, 08:17:28 UTC] {spark_submit.py:490} INFO - at org.apache.spark.deploy.SparkSubmit$$anon$2.doSubmit(SparkSubmit.scala:1111)
+[2025-05-13, 08:17:28 UTC] {spark_submit.py:490} INFO - at org.apache.spark.deploy.SparkSubmit$.main(SparkSubmit.scala:1120)
+[2025-05-13, 08:17:28 UTC] {spark_submit.py:490} INFO - at org.apache.spark.deploy.SparkSubmit.main(SparkSubmit.scala)
+[2025-05-13, 08:17:28 UTC] {taskinstance.py:1824} ERROR - Task failed with exception
+Traceback (most recent call last):
+  File "/home/airflow/.local/lib/python3.7/site-packages/airflow/providers/apache/spark/operators/spark_submit.py", line 157, in execute
+    self._hook.submit(self._application)
+  File "/home/airflow/.local/lib/python3.7/site-packages/airflow/providers/apache/spark/hooks/spark_submit.py", line 422, in submit
+    f"Cannot execute: {self._mask_cmd(spark_submit_cmd)}. Error code is: {returncode}."
+airflow.exceptions.AirflowException: Cannot execute: spark-submit --master spark-master:7077 --conf spark.master=spark://spark-master:7077 --conf spark.submit.deployMode=client --conf spark.driver.memory=4g --conf spark.executor.memory=4g --conf spark.executor.instances=2 --conf spark.executor.cores=2 --conf spark.network.timeout=800s --conf spark.executor.heartbeatInterval=60s --conf spark.ui.showConsoleProgress=true --conf spark.hadoop.fs.defaultFS=hdfs://namenode:8020 --name arrow-spark --verbose hdfs://namenode:8020/user/jenkins/application_spark/app.py --env prod --step preload --task-id stage_preload. Error code is: 1.
+[2025-05-13, 08:17:28 UTC] {taskinstance.py:1350} INFO - Marking task as UP_FOR_RETRY. dag_id=spark_full_stage_processing12133, task_id=spark_stage_preload, execution_date=20250513T081306, start_date=20250513T081309, end_date=20250513T081728
+[2025-05-13, 08:17:28 UTC] {standard_task_runner.py:109} ERROR - Failed to execute job 243 for task spark_stage_preload (Cannot execute: spark-submit --master spark-master:7077 --conf spark.master=spark://spark-master:7077 --conf spark.submit.deployMode=client --conf spark.driver.memory=4g --conf spark.executor.memory=4g --conf spark.executor.instances=2 --conf spark.executor.cores=2 --conf spark.network.timeout=800s --conf spark.executor.heartbeatInterval=60s --conf spark.ui.showConsoleProgress=true --conf spark.hadoop.fs.defaultFS=hdfs://namenode:8020 --name arrow-spark --verbose hdfs://namenode:8020/user/jenkins/application_spark/app.py --env prod --step preload --task-id stage_preload. Error code is: 1.; 185)
+[2025-05-13, 08:17:28 UTC] {local_task_job_runner.py:225} INFO - Task exited with return code 1
+[2025-05-13, 08:17:28 UTC] {taskinstance.py:2653} INFO - 0 downstream tasks scheduled from follow-on schedule check
