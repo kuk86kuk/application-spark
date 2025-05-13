@@ -29,7 +29,7 @@ def main():
         for line in file_content:
             print(line)
             
-        if args.step == 'stage_preload':
+        if args.step == 'preload':
             logger.print_step_info("stage_preload")
             
            
@@ -38,22 +38,22 @@ def main():
         
 
 
-        elif args.step == 'stage_calc_stg':
+        elif args.step == 'calc_stg':
             logger.print_step_info("stage_calc_stg")
 
-        elif args.step == 'stage_check_stg':
+        elif args.step == 'check_stg':
             logger.print_step_info("stage_check_stg")
 
-        elif args.step == 'stage_calc_inc':
+        elif args.step == 'calc_inc':
             logger.print_step_info("stage_calc_inc")
           
-        elif args.step == 'stage_check_inc':
+        elif args.step == 'check_inc':
             logger.print_step_info("stage_check_inc")
 
-        elif args.step == 'stage_MTP':
+        elif args.step == 'MTP':
             logger.print_step_info("stage_MTP")
             
-        elif args.step == 'stage_hist':
+        elif args.step == 'hist':
             logger.print_step_info("stage_hist")
             
         elif args.step == 'final_check':
