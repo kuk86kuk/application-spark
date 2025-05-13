@@ -21,17 +21,18 @@ def main():
     try:
         # Создаем новую сессию для каждой задачи
         spark = spark_manager.start_session()
-
+        print(args.step)
+        hdfs_file_path = "hdfs://namenode:8020/datamarts/DataMart_transaction/ddl/schema.sql"
+        print(hdfs_file_path)
+        file_content = spark.sparkContext.textFile(hdfs_file_path).collect()
+        print(file_content)
+        for line in file_content:
+            print(line)
+            
         if args.step == 'stage_preload':
             logger.print_step_info("stage_preload")
             
-            hdfs_file_path = "hdfs://namenode:8020/datamarts/DataMart_transaction/ddl/schema.sql"
-            print(hdfs_file_path)
-            file_content = spark.sparkContext.textFile(hdfs_file_path).collect()
-            print(file_content)
-            for line in file_content:
-                print(line)
-                
+           
             # Preload.run_and_save_sql_hdfs(spark, args.query_path, args.query_mapping, args.table_schema, args.table_name, args.repartition, args.partition_by, args.bucket_by, args.num_buckets,
             #                               args.location, args.do_truncate_table, args.do_drop_table, args.do_msck_repair_table, args.temp_view_name, args.cache_df)
         
