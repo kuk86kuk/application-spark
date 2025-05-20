@@ -17,17 +17,18 @@ class SparkSessionManager:
                 "spark.default.parallelism": "8",
                 "spark.hadoop.fs.defaultFS": "hdfs://namenode:8020",
                 "spark.submit.deployMode": "client",
-                "spark.yarn.resourcemanager.hostname": "namenode",
-                "spark.yarn.resourcemanager.address": "namenode:8032",
-                "spark.yarn.resourcemanager.scheduler.address": "namenode:8030",
-                "spark.yarn.historyServer.address": "namenode:18080",
-                "spark.hadoop.yarn.resourcemanager.hostname": "namenode",
+                "spark.yarn.resourcemanager.hostname": "resourcemanager",
+                "spark.yarn.resourcemanager.address": "resourcemanager:8032",
+                "spark.yarn.resourcemanager.scheduler.address": "resourcemanager:8030",
+                "spark.yarn.historyServer.address": "resourcemanager:18080",
+                "spark.hadoop.yarn.resourcemanager.hostname": "resourcemanager",
                 "spark.hadoop.dfs.client.use.datanode.hostname": "true",
-                "spark.hadoop.dfs.replication": "1"
+                "spark.hadoop.dfs.replication": "1",
+                "spark.pyspark.python": "/usr/bin/python3.8"
             }
         }
         return config
-    
+
     @staticmethod
     def parse_arguments():
         parser = argparse.ArgumentParser()
