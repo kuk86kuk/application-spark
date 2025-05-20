@@ -1,69 +1,66 @@
-from pyspark.sql import SparkSession
+from config.spark_session import SparkSessionManager
+from utils.logger import SparkLogger
+from steps.preload import Preload
 import argparse
 
-class SparkSessionManager:
-    def __init__(self, config):
-        self.config = config
-        self.spark = None
 
-    @staticmethod
-    def get_spark_config(task_id=None):
-        config = {
-            "app_name": f"MySparkApp_{task_id}" if task_id else "MySparkApp",
-            "master": "yarn",
-            "spark_configs": {
-                "spark.executor.memory": "1g",
-                "spark.driver.memory": "1g",
-                "spark.default.parallelism": "8",
-                "spark.hadoop.fs.defaultFS": "hdfs://namenode:8020",
-                "spark.submit.deployMode": "client",
-                "spark.yarn.resourcemanager.hostname": "resourcemanager",
-                "spark.yarn.resourcemanager.address": "resourcemanager:8032",
-                "spark.yarn.resourcemanager.scheduler.address": "resourcemanager:8030",
-                "spark.yarn.historyServer.address": "resourcemanager:18080",
-                "spark.hadoop.yarn.resourcemanager.hostname": "resourcemanager",
-                "spark.hadoop.dfs.client.use.datanode.hostname": "true",
-                "spark.hadoop.dfs.replication": "1",
-                "spark.pyspark.python": "/usr/bin/python3.8"
-            }
-        }
-        return config
 
-    @staticmethod
-    def parse_arguments():
-        parser = argparse.ArgumentParser()
-        parser.add_argument('--env', required=True)
-        parser.add_argument('--step', required=True)
-        parser.add_argument('--datamart', required=True)
-        parser.add_argument('--task-id', required=True)
-        parser.add_argument('--query_mapping', required=True)
-        parser.add_argument('--query_path', required=True)
-        parser.add_argument('--table_schema', required=True)
-        parser.add_argument('--table_name', required=True)
-        parser.add_argument('--repartition', required=True)
-        parser.add_argument('--partition_by', required=True)
-        parser.add_argument('--bucket_by', required=True)
-        parser.add_argument('--num_buckets', required=True)
-        parser.add_argument('--location', required=True)
-        parser.add_argument('--do_truncate_table', required=True)
-        parser.add_argument('--do_drop_table', required=True)
-        parser.add_argument('--do_msck_repair_table', required=True)
-        parser.add_argument('--temp_view_name', required=True)
-        parser.add_argument('--cache_df', required=True)
-        return parser.parse_args()
+def main():
+    args = SparkSessionManager.parse_arguments()
+    config = SparkSessionManager.get_spark_config(args.task_id)
+    
+    # Создаем экземпляр менеджера и работаем с сессией
+    spark_manager = SparkSessionManager(config)
+    spark = spark_manager.start_session()
 
-    def start_session(self):
-        builder = SparkSession.builder \
-            .appName(self.config["app_name"]) \
-            .master(self.config["master"])
+    # Инициализация логгера
+    logger = SparkLogger(env=args.env, step_name=args.step)
+    logger.print_header()
 
-        for key, value in self.config["spark_configs"].items():
-            builder = builder.config(key, value)
 
-        self.spark = builder.getOrCreate()
-        return self.spark
+    try:
+        # Создаем новую сессию для каждой задачи
+        spark = spark_manager.start_session()
+        print(args.step)
+        hdfs_file_path = "hdfs://namenode:8020/datamarts/DataMart_transaction/ddl/schema.sql"
+        print(hdfs_file_path)
+        file_content = spark.sparkContext.textFile(hdfs_file_path).collect()
+        print(file_content)
+        for line in file_content:
+            print(line)
+            
+        if args.step == 'preload':
+            logger.print_step_info("stage_preload")
 
-    def stop_session(self):
-        if self.spark:
-            self.spark.stop()
-            self.spark = None
+
+        elif args.step == 'calc_stg':
+            logger.print_step_info("stage_calc_stg")
+
+        elif args.step == 'check_stg':
+            logger.print_step_info("stage_check_stg")
+
+        elif args.step == 'calc_inc':
+            logger.print_step_info("stage_calc_inc")
+          
+        elif args.step == 'check_inc':
+            logger.print_step_info("stage_check_inc")
+
+        elif args.step == 'MTP':
+            logger.print_step_info("stage_MTP")
+            
+        elif args.step == 'hist':
+            logger.print_step_info("stage_hist")
+            
+        elif args.step == 'final_check':
+            logger.print_step_info("final_check")
+            
+    except Exception as e:
+        print(f"Error in task {args.task_id}: {str(e)}")
+        raise
+
+    finally:
+        spark_manager.stop_session()
+        logger.print_stats()
+
+if __name__ == "__main__":
+    main()
