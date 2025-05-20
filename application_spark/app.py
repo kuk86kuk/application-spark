@@ -31,11 +31,6 @@ def main():
             
         if args.step == 'preload':
             logger.print_step_info("stage_preload")
-            
-           
-            # Preload.run_and_save_sql_hdfs(spark, args.query_path, args.query_mapping, args.table_schema, args.table_name, args.repartition, args.partition_by, args.bucket_by, args.num_buckets,
-            #                               args.location, args.do_truncate_table, args.do_drop_table, args.do_msck_repair_table, args.temp_view_name, args.cache_df)
-        
 
 
         elif args.step == 'calc_stg':
