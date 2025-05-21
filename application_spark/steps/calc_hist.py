@@ -12,7 +12,7 @@ import re
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-class Calc_inc:
+class Calc_hist:
     
     @staticmethod
     def run_and_save_sql_hdfs(
@@ -35,8 +35,8 @@ class Calc_inc:
         """Выполняет SQL-запрос и сохраняет результат в таблицу"""
         spark.conf.set("spark.sql.sources.partitionOverwriteMode", "dynamic")
         
-        query = Calc_inc.get_query(spark, query_path, query_mapping)
-        df = Calc_inc.execute_query(spark, query)
+        query = Calc_hist.get_query(spark, query_path, query_mapping)
+        df = Calc_hist.execute_query(spark, query)
         
         if temp_view_name != "_":
             df.createOrReplaceTempView(temp_view_name)
@@ -46,17 +46,17 @@ class Calc_inc:
         
         if table_name != "_":
             if do_truncate_table == "y":
-                Calc_inc.truncate_table(spark, table_schema, table_name)
+                Calc_hist.truncate_table(spark, table_schema, table_name)
             if do_drop_table == "y":
-                Calc_inc.drop_table(spark, table_schema, table_name)
+                Calc_hist.drop_table(spark, table_schema, table_name)
             
-            Calc_inc.save_dataframe_to_table(
+            Calc_hist.save_dataframe_to_table(
                 df, repartition, partition_by, location, 
                 bucket_by, num_buckets, table_schema, table_name
             )
             
             if do_msck_repair_table == "y" and partition_by != "_":
-                Calc_inc.execute_query(spark, f"msck repair table {table_schema}.{table_name}")
+                Calc_hist.execute_query(spark, f"msck repair table {table_schema}.{table_name}")
         
         return "SUCCESS"
 
@@ -101,13 +101,13 @@ class Calc_inc:
     @staticmethod
     def get_query(spark: SparkSession, query_path: str, query_mapping: str = "") -> str:
         """Читает SQL-запрос из файла и применяет подстановки"""
-        resolved_map = Calc_inc.resolve_mapping(query_mapping)
+        resolved_map = Calc_hist.resolve_mapping(query_mapping)
         query = spark.read.text(query_path).collect()[0][0]
         
         for key, value in resolved_map.items():
             query = query.replace(f"${{{key}}}", value)
         
-        Calc_inc.validate_sql(spark, query)
+        Calc_hist.validate_sql(spark, query)
         logger.info(f"Resolved query:\n{query}")
         return query
 
@@ -156,7 +156,7 @@ class Calc_inc:
         """Очищает таблицу, удаляя данные из HDFS"""
         logger.info(f"Truncating {table_schema}.{table_name}")
         try:
-            location = Calc_inc.get_table_location(spark, table_schema, table_name)
+            location = Calc_hist.get_table_location(spark, table_schema, table_name)
             # hdfs_client = InsecureClient("http://namenode:9870")
             # hdfs_client.delete(location, recursive=True)
             logger.info(f"Deleted {location}")

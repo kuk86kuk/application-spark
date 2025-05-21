@@ -13,14 +13,16 @@ curl -i -X PUT -T "start.sh" "http://datanode:9864/webhdfs/v1/datamarts/DataMart
 
 curl -s -o /dev/null -w '%{http_code}' -X PUT \
                     '${WEBHDFS_URL}${HDFS_PATH}?op=MKDIRS&user.name=${HDFS_USER}'
-docker exec -it namenode  bash
+docker exec -it hadoop-namenode-1  bash
+docker exec -it hadoop-namenode-1  bash
+
 
 curl -s -o /dev/null -w  start.sh "http://datanode:9864/webhdfs/v1/datamarts/DataMart_transaction/ddl/schema.sql?op=CREATE&user.name=jenkins&namenoderpcaddress=namenode:8020&createflag=&createparent=true&overwrite=true"
 curl -X PUT -T start.sh "http://host.docker.internal:9870/webhdfs/v1/datamarts/DataMart_transaction/ddl/schema.sql?op=CREATE&user.name=jenkins"
 docker exec -it jenkins-jenkins-1 cat /var/jenkins_home/secrets/initialAdminPassword  43b54d0a88de4aeba30b322b82b5b8b7
 
 
-
+bash -c 'echo -e "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<configuration>\n  <property>\n    <name>fs.defaultFS</name>\n    <value>hdfs://namenode:8020</value>\n  </property>\n</configuration>" > /etc/hadoop/core-site.xml'
 
 
 docker exec -it airflow-airflow-webserver-1 bash
@@ -109,3 +111,28 @@ with DAG(
     end = DummyOperator(task_id='end')
 
     start >> [check_master, check_worker, ping_master, ping_worker] >> check_ports >> end
+
+
+
+
+
+
+
+echo "deb http://deb.debian.org/debian bullseye main" >> /etc/apt/sources.list
+apt-get update
+
+
+
+spark-submit \
+   --master spark://spark-master:7077 \
+   --conf spark.hadoop.fs.defaultFS=hdfs://namenode:8020 \
+   --conf spark.hadoop.dfs.datanode.address=datanode:9864 \
+   --conf spark.hadoop.dfs.datanode.http.address=datanode:9864 \
+   --conf spark.hadoop.dfs.client.use.datanode.hostname=true \
+   --py-files hdfs://namenode:9870/user/jenkins/application_spark/dependencies.zip \
+    hdfs://namenode:9870/user/jenkins/application_spark/app.py
+
+   spark-submit \
+                  --master spark://spark-master:7077 \
+                  --py-files hdfs://namenode:9870/user/jenkins/application_spark/dependencies.zip \
+                  hdfs://namenode:9870/user/jenkins/application_spark/app.py

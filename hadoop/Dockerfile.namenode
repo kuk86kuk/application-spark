@@ -1,0 +1,58 @@
+FROM bde2020/hadoop-namenode:2.0.0-hadoop3.2.1-java8
+
+# Обновление источников APT для Debian Stretch
+USER root
+RUN echo "deb http://archive.debian.org/debian stretch main" > /etc/apt/sources.list && \
+    echo "deb http://archive.debian.org/debian-security stretch/updates main" >> /etc/apt/sources.list
+
+# Установка необходимых пакетов
+RUN apt-get update && apt-get install -y \
+    wget \
+    build-essential \
+    zlib1g-dev \
+    libncurses5-dev \
+    libgdbm-dev \
+    libnss3-dev \
+    libssl-dev \
+    libreadline-dev \
+    libffi-dev \
+    curl \
+    libbz2-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# Установка Python 3.8 от исходников
+RUN wget https://www.python.org/ftp/python/3.8.12/Python-3.8.12.tgz -O /tmp/Python-3.8.12.tgz && \
+    tar -xzf /tmp/Python-3.8.12.tgz -C /tmp && \
+    cd /tmp/Python-3.8.12 && \
+    ./configure --enable-optimizations --enable-shared && \
+    make -j$(nproc) && \
+    make altinstall && \
+    ldconfig && \
+    ln -sf /usr/local/bin/python3.8 /usr/bin/python3.8 && \
+    ln -sf /usr/local/bin/python3.8 /usr/bin/python3 && \
+    rm -rf /tmp/Python-3.8.12*
+
+# Установка pip для Python 3.8
+RUN curl https://bootstrap.pypa.io/pip/3.8/get-pip.py -o /tmp/get-pip.py && \
+    /usr/bin/python3.8 /tmp/get-pip.py && \
+    rm /tmp/get-pip.py
+
+# Установка Spark
+RUN wget -q https://archive.apache.org/dist/spark/spark-3.3.0/spark-3.3.0-bin-hadoop3.tgz -O /tmp/spark-3.3.0-bin-hadoop3.tgz && \
+    tar -xzf /tmp/spark-3.3.0-bin-hadoop3.tgz -C /opt/ && \
+    mv /opt/spark-3.3.0-bin-hadoop3 /opt/spark-bin && \
+    chmod -R 777 /opt/spark-bin && \
+    rm /tmp/spark-3.3.0-bin-hadoop3.tgz
+
+# Настройка HDFS
+COPY core-site.xml /etc/hadoop/core-site.xml
+COPY hdfs-site.xml /etc/hadoop/hdfs-site.xml
+
+# Создание каталога для namenode
+RUN mkdir -p /hadoop/dfs/name && chmod -R 777 /hadoop/dfs/name
+
+# Настройка переменных окружения
+ENV JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64
+ENV PATH=/usr/local/bin:/usr/bin:/opt/spark-bin/bin:$PATH
+ENV HADOOP_CONF_DIR=/etc/hadoop
+ENV LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH

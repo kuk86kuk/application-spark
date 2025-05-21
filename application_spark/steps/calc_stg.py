@@ -1,116 +1,171 @@
-from config.SparkManager import SparkManager
-from pyspark.sql import DataFrame
+from pyspark.sql import SparkSession, DataFrame
+from pyspark.sql.functions import col, current_timestamp, expr, lit
+from pyspark.sql.types import StringType
+import os
+# from hdfs import InsecureClient
+from typing import Dict, Tuple, Optional, List, Callable, Any
 import logging
-from typing import Dict
+from datetime import datetime
 import re
 
-class StagingCalculator:
-    def __init__(self, env: str, params: Dict):
-        self.spark = SparkManager.get_spark(env)
-        self.params = params
-        self.logger = logging.getLogger(self.__class__.__name__)
+# Настройка логгера
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
-    def _read_sql_file(self, hdfs_path: str) -> str:
-        """Read SQL file from HDFS"""
-        try:
-            hadoop_conf = self.spark.sparkContext._jsc.hadoopConfiguration()
-            Path = self.spark.sparkContext._jvm.org.apache.hadoop.fs.Path
-            FileSystem = self.spark.sparkContext._jvm.org.apache.hadoop.fs.FileSystem
-            
-            fs = FileSystem.get(hadoop_conf)
-            path = Path(hdfs_path)
-            
-            if not fs.exists(path):
-                raise FileNotFoundError(f"SQL file not found: {hdfs_path}")
-            
-            stream = fs.open(path)
-            sql_content = ""
-            try:
-                sql_content = "".join([line.decode('utf-8') for line in stream])
-            finally:
-                stream.close()
-                
-            return sql_content
-            
-        except Exception as e:
-            self.logger.error(f"Failed to read SQL file: {str(e)}")
-            raise
-
-    def _replace_parameters(self, sql: str) -> str:
-        """Replace placeholders in SQL with actual parameters"""
-        try:
-            # Стандартные параметры
-            replacements = {
-                '${source1}': self.params['source1'],
-                '${source2}': self.params['source2'],
-                '${processing_date}': self.params['processing_date'],
-                '${env}': self.params['environment']
-            }
-            
-            # Дополнительные параметры из конфига
-            for param, value in self.params.get('sql_params', {}).items():
-                placeholder = f'${{{param}}}'
-                replacements[placeholder] = value
-            
-            # Заменяем все плейсхолдеры
-            for placeholder, value in replacements.items():
-                sql = sql.replace(placeholder, str(value))
-                
-            return sql
-            
-        except Exception as e:
-            self.logger.error(f"Parameter replacement failed: {str(e)}")
-            raise
-
-    def _validate_sql(self, sql: str) -> None:
-        """Check for unresolved parameters"""
-        unresolved = set(re.findall(r'\$\{\w+\}', sql))
-        if unresolved:
-            raise ValueError(f"Unresolved parameters in SQL: {unresolved}")
-
-    def execute(self) -> DataFrame:
-        """Main method to execute parameterized SQL"""
-        try:
-            # 1. Получаем SQL-файл
-            sql_file_path = self.params['sql_file_path']
-            self.logger.info(f"Reading SQL file from: {sql_file_path}")
-            raw_sql = self._read_sql_file(sql_file_path)
-            
-            # 2. Подставляем параметры
-            self.logger.info("Applying parameters to SQL")
-            processed_sql = self._replace_parameters(raw_sql)
-            self._validate_sql(processed_sql)
-            
-            # 3. Выполняем SQL
-            self.logger.info("Executing SQL query")
-            return self.spark.sql(processed_sql)
-            
-        except Exception as e:
-            self.logger.error(f"STG calculation failed: {str(e)}")
-            raise
-
-def process_calc_stg(**kwargs):
-    """Airflow task function for staging calculation"""
-    params = kwargs['params']['calc_stg']
-    env = kwargs['params']['environment']
+class Calc_stg:
     
-    try:
-        calculator = StagingCalculator(env, params)
-        df = calculator.execute()
+    @staticmethod
+    def run_and_save_sql_hdfs(
+        spark: SparkSession,
+        query_path: str,
+        query_mapping: str = "",
+        table_schema: str = "_",
+        table_name: str = "_",
+        repartition: str = "40",
+        partition_by: str = "_",
+        bucket_by: str = "_",
+        num_buckets: str = "300",
+        location: str = "_",
+        do_truncate_table: str = "n",
+        do_drop_table: str = "n",
+        do_msck_repair_table: str = "n",
+        temp_view_name: str = "_",
+        cache_df: str = "n"
+    ) -> str:
+        """Выполняет SQL-запрос и сохраняет результат в таблицу"""
+        spark.conf.set("spark.sql.sources.partitionOverwriteMode", "dynamic")
         
-        # Сохранение результата
-        if 'output_path' in params:
-            SparkManager.write_with_partitioning(
-                df=df,
-                output_path=params['output_path'],
-                partition_cols=params.get('partition_cols', []),
-                bucket_cols=params.get('bucket_cols', []),
-                num_buckets=params.get('num_buckets')
-            )
-            logging.info(f"STG results saved to {params['output_path']}")
+        query = Calc_stg.get_query(spark, query_path, query_mapping)
+        df = Calc_stg.execute_query(spark, query)
+        
+        if temp_view_name != "_":
+            df.createOrReplaceTempView(temp_view_name)
+        
+        if cache_df == "y":
+            df.cache()
+        
+        if table_name != "_":
+            if do_truncate_table == "y":
+                Calc_stg.truncate_table(spark, table_schema, table_name)
+            if do_drop_table == "y":
+                Calc_stg.drop_table(spark, table_schema, table_name)
             
-        return True
+            Calc_stg.save_dataframe_to_table(
+                df, repartition, partition_by, location, 
+                bucket_by, num_buckets, table_schema, table_name
+            )
+            
+            if do_msck_repair_table == "y" and partition_by != "_":
+                Calc_stg.execute_query(spark, f"msck repair table {table_schema}.{table_name}")
         
-    except Exception as e:
-        logging.error(f"STG processing failed: {str(e)}")
-        raise
+        return "SUCCESS"
+
+    
+    @staticmethod
+    def save_dataframe_to_table(
+        df: DataFrame,
+        repartition: str,
+        partition_by: str,
+        location: str,
+        bucket_by: str,
+        num_buckets: str,
+        table_schema: str,
+        table_name: str
+    ) -> None:
+        """Сохраняет DataFrame в таблицу с указанными параметрами"""
+        writer = df.write.format("parquet").mode("overwrite")
+        
+        # Репартиционирование
+        if repartition not in ("0", "_"):
+            parts = [p.strip() for p in repartition.split(",")]
+            if parts[0].isdigit():
+                writer = writer.repartition(int(parts[0]), *[col(p) for p in parts[1:]])
+            else:
+                writer = writer.repartition(*[col(p) for p in parts])
+        
+        # Партиционирование
+        if partition_by != "_":
+            writer = writer.partitionBy(*[p.strip() for p in partition_by.split(",")])
+        
+        # Расположение
+        if location != "_":
+            writer = writer.option("path", location)
+        
+        # Бакетирование
+        if bucket_by != "_":
+            buckets = [b.strip() for b in bucket_by.split(",")]
+            writer = writer.bucketBy(int(num_buckets), buckets[0], *buckets[1:])
+        
+        writer.saveAsTable(f"{table_schema}.{table_name}")
+
+    @staticmethod
+    def get_query(spark: SparkSession, query_path: str, query_mapping: str = "") -> str:
+        """Читает SQL-запрос из файла и применяет подстановки"""
+        resolved_map = Calc_stg.resolve_mapping(query_mapping)
+        query = spark.read.text(query_path).collect()[0][0]
+        
+        for key, value in resolved_map.items():
+            query = query.replace(f"${{{key}}}", value)
+        
+        Calc_stg.validate_sql(spark, query)
+        logger.info(f"Resolved query:\n{query}")
+        return query
+
+    
+
+    @staticmethod
+    def execute_query(spark: SparkSession, query: str) -> DataFrame:
+        """Выполняет SQL-запрос и возвращает DataFrame"""
+        logger.info(f"Executing:\n{query}")
+        return spark.sql(query)
+
+    @staticmethod
+    def validate_sql(spark: SparkSession, query: str) -> bool:
+        """Проверяет валидность SQL-запроса"""
+        try:
+            spark.sql(query).explain()
+            return True
+        except Exception as ex:
+            raise RuntimeError(f"SQL validation failed: {str(ex)}")
+
+    @staticmethod
+    def resolve_mapping(query_mapping: str) -> Dict[str, str]:
+        """Разбирает строку с подстановками в словарь"""
+        if not query_mapping.strip():
+            return {}
+        
+        try:
+            return dict(item.split(":") for item in query_mapping.split(";"))
+        except Exception:
+            error_msg = (f"Incorrect queryMapping: '{query_mapping}'. "
+                        "Expected format: 'key1:value1;key2:value2;...;keyN:valueN'")
+            logger.error(error_msg)
+            raise RuntimeError(error_msg)
+
+    @staticmethod
+    def get_table_location(spark: SparkSession, table_schema: str, table_name: str) -> str:
+        """Возвращает расположение таблицы в HDFS"""
+        return (spark
+                .sql(f"describe formatted {table_schema}.{table_name}")
+                .filter("col_name = 'Location'")
+                .select("data_type")
+                .collect()[0][0])
+
+    @staticmethod
+    def truncate_table(spark: SparkSession, table_schema: str, table_name: str) -> None:
+        """Очищает таблицу, удаляя данные из HDFS"""
+        logger.info(f"Truncating {table_schema}.{table_name}")
+        try:
+            location = Calc_stg.get_table_location(spark, table_schema, table_name)
+            # hdfs_client = InsecureClient("http://namenode:9870")
+            # hdfs_client.delete(location, recursive=True)
+            logger.info(f"Deleted {location}")
+        except Exception as ex:
+            logger.error(f"Could not truncate {table_schema}.{table_name}: {str(ex)}")
+
+    @staticmethod
+    def drop_table(spark: SparkSession, table_schema: str, table_name: str) -> None:
+        """Удаляет таблицу"""
+        drop_stmt = f"drop table if exists {table_schema}.{table_name}"
+        logger.info(f"Executing: {drop_stmt}")
+        spark.sql(drop_stmt)

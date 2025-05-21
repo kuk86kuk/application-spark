@@ -1,0 +1,52 @@
+# Stage 1: Извлечение бинарников Spark
+FROM debian:buster AS spark-source
+RUN apt-get update && apt-get install -y wget && apt-get clean && rm -rf /var/lib/apt/lists/*
+RUN wget https://archive.apache.org/dist/spark/spark-3.3.0/spark-3.3.0-bin-hadoop3.tgz && \
+    tar -xzf spark-3.3.0-bin-hadoop3.tgz -C /opt && \
+    rm spark-3.3.0-bin-hadoop3.tgz
+
+# Stage 2: Airflow образ
+FROM apache/airflow:2.6.3
+USER root
+RUN apt-get update && \
+    apt-get install -y openjdk-11-jdk && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+RUN mkdir -p /opt/hadoop-conf && chown 5000:5000 /opt/hadoop-conf
+RUN mkdir -p /opt/spark-bin/bin /opt/spark-bin/jars && chown 5000:5000 /opt/spark-bin -R
+USER airflow
+ENV JAVA_HOME=/usr/lib/jvm/java-11-openjdk-amd64
+RUN python -m pip install --upgrade pip
+RUN pip install --no-cache-dir --default-timeout=300 apache-airflow-providers-apache-spark==4.1.0 'sqlalchemy>=1.4,<2.0'
+ENV HADOOP_CONF_DIR=/opt/hadoop-conf
+COPY hadoop-conf/core-site.xml $HADOOP_CONF_DIR/core-site.xml
+COPY hadoop-conf/yarn-site.xml $HADOOP_CONF_DIR/yarn-site.xml
+COPY --from=spark-source /opt/spark-3.3.0-bin-hadoop3/bin /opt/spark-bin/bin
+COPY --from=spark-source /opt/spark-3.3.0-bin-hadoop3/jars /opt/spark-bin/jars
+ENV SPARK_HOME=/opt/spark-bin
+ENV PATH=$SPARK_HOME/bin:$PATH
+RUN spark-submit --version
+
+FROM apache/airflow:2.9.2-python3.7
+
+# Установка зависимостей
+USER root
+RUN apt-get update && apt-get install -y \
+    openjdk-11-jdk \
+    wget \
+    curl \
+    docker.io \
+    && rm -rf /var/lib/apt/lists/*
+
+# Установка Python-пакетов
+USER airflow
+RUN pip install --no-cache-dir apache-airflow-providers-apache-spark==4.1.0
+
+# Настройка переменных окружения
+ENV JAVA_HOME=/usr/lib/jvm/java-11-openjdk-amd64
+ENV HADOOP_CONF_DIR=/opt/hadoop-conf
+ENV PATH=$PATH:/usr/lib/jvm/java-11-openjdk-amd64/bin
+
+# Копирование Hadoop-конфигурации (если нужно)
+USER root
+RUN mkdir -p /opt/hadoop-conf && chmod -R 777 /opt/hadoop-conf

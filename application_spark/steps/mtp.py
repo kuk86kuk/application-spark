@@ -1,129 +1,171 @@
-from config.SparkManager import SparkManager
-from pyspark.sql import functions as F
-from typing import Dict
+from pyspark.sql import SparkSession, DataFrame
+from pyspark.sql.functions import col, current_timestamp, expr, lit
+from pyspark.sql.types import StringType
+import os
+# from hdfs import InsecureClient
+from typing import Dict, Tuple, Optional, List, Callable, Any
 import logging
+from datetime import datetime
+import re
+
+# Настройка логгера
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 class TargetTableMover:
-    def __init__(self, env: str, params: Dict):
-        self.spark = SparkManager.get_spark(env)
-        self.params = params
-        self.logger = logging.getLogger(self.__class__.__name__)
-        self.merge_stats = {}
-
-    def _validate_input(self):
-        """Validate input parameters"""
-        required_params = ['target_table', 'increment_table', 'merge_keys']
-        for param in required_params:
-            if param not in self.params:
-                raise ValueError(f"Missing required parameter: {param}")
-
-    def _get_merge_condition(self, df_target, df_increment):
-        """Generate merge condition based on merge keys"""
-        conditions = []
-        for key in self.params['merge_keys']:
-            if key not in df_increment.columns or key not in df_target.columns:
-                raise ValueError(f"Merge key {key} not found in both tables")
-            conditions.append(f"target.{key} = increment.{key}")
-        return " AND ".join(conditions)
-
-    def _prepare_increment_data(self):
-        """Prepare increment data with optional transformations"""
-        df = self.spark.table(self.params['increment_table'])
-        
-        # Apply filter if specified
-        if 'increment_filter' in self.params:
-            df = df.filter(self.params['increment_filter'])
-            
-        # Select specific columns if specified
-        if 'columns' in self.params:
-            df = df.select(*self.params['columns'])
-            
-        return df
-
-    def _merge_data(self, df_target, df_increment):
-        """Perform MERGE operation (UPSERT pattern)"""
-        merge_condition = self._get_merge_condition(df_target, df_increment)
-        target_table = self.params['target_table']
-        temp_view = "increment_data"
-        
-        df_increment.createOrReplaceTempView(temp_view)
-        
-        # Build merge columns (all columns except merge keys)
-        merge_columns = [c for c in df_increment.columns if c not in self.params['merge_keys']]
-        
-        # Generate SQL for merge
-        merge_sql = f"""
-            MERGE INTO {target_table} AS target
-            USING {temp_view} AS increment
-            ON {merge_condition}
-            WHEN MATCHED THEN
-                UPDATE SET {', '.join([f"target.{col} = increment.{col}" for col in merge_columns])}
-            WHEN NOT MATCHED THEN
-                INSERT ({', '.join(df_increment.columns)})
-                VALUES ({', '.join([f"increment.{col}" for col in df_increment.columns])})
-        """
-        
-        self.logger.info(f"Executing MERGE operation:\n{merge_sql}")
-        self.spark.sql(merge_sql)
-        
-        # Get merge statistics
-        self.merge_stats = {
-            'target_table': target_table,
-            'increment_table': self.params['increment_table'],
-            'merge_keys': self.params['merge_keys'],
-            'merged_at': str(F.current_timestamp())
-        }
-
-    def _cleanup_increment(self):
-        """Clean up increment data after successful merge"""
-        if self.params.get('cleanup_increment', True):
-            self.logger.info(f"Cleaning up increment table: {self.params['increment_table']}")
-            self.spark.sql(f"TRUNCATE TABLE {self.params['increment_table']}")
-            self.merge_stats['increment_cleaned'] = True
-        else:
-            self.merge_stats['increment_cleaned'] = False
-
-    def execute(self):
-        """Main method to move data from increment to target"""
-        self._validate_input()
-        
-        df_target = self.spark.table(self.params['target_table'])
-        df_increment = self._prepare_increment_data()
-        
-        initial_count = df_target.count()
-        increment_count = df_increment.count()
-        
-        self.logger.info(f"Starting merge: {increment_count} records to merge into {initial_count} existing records")
-        
-        self._merge_data(df_target, df_increment)
-        self._cleanup_increment()
-        
-        final_count = self.spark.table(self.params['target_table']).count()
-        self.merge_stats.update({
-            'initial_count': initial_count,
-            'increment_count': increment_count,
-            'final_count': final_count,
-            'records_changed': final_count - initial_count
-        })
-        
-        self.logger.info(f"Merge completed. Stats: {self.merge_stats}")
-        return self.merge_stats
-
-def process_move_to_target(**kwargs):
-    """Airflow task function for moving data to target"""
-    params = kwargs['params']['move_to_target']
-    env = kwargs['params']['environment']
     
-    try:
-        mover = TargetTableMover(env, params)
-        result = mover.execute()
+    @staticmethod
+    def run_and_save_sql_hdfs(
+        spark: SparkSession,
+        query_path: str,
+        query_mapping: str = "",
+        table_schema: str = "_",
+        table_name: str = "_",
+        repartition: str = "40",
+        partition_by: str = "_",
+        bucket_by: str = "_",
+        num_buckets: str = "300",
+        location: str = "_",
+        do_truncate_table: str = "n",
+        do_drop_table: str = "n",
+        do_msck_repair_table: str = "n",
+        temp_view_name: str = "_",
+        cache_df: str = "n"
+    ) -> str:
+        """Выполняет SQL-запрос и сохраняет результат в таблицу"""
+        spark.conf.set("spark.sql.sources.partitionOverwriteMode", "dynamic")
         
-        # Можно добавить дополнительные проверки результата
-        if result['increment_count'] == 0:
-            logging.warning("No data in increment table")
+        query = TargetTableMover.get_query(spark, query_path, query_mapping)
+        df = TargetTableMover.execute_query(spark, query)
+        
+        if temp_view_name != "_":
+            df.createOrReplaceTempView(temp_view_name)
+        
+        if cache_df == "y":
+            df.cache()
+        
+        if table_name != "_":
+            if do_truncate_table == "y":
+                TargetTableMover.truncate_table(spark, table_schema, table_name)
+            if do_drop_table == "y":
+                TargetTableMover.drop_table(spark, table_schema, table_name)
             
-        return result
+            TargetTableMover.save_dataframe_to_table(
+                df, repartition, partition_by, location, 
+                bucket_by, num_buckets, table_schema, table_name
+            )
+            
+            if do_msck_repair_table == "y" and partition_by != "_":
+                TargetTableMover.execute_query(spark, f"msck repair table {table_schema}.{table_name}")
         
-    except Exception as e:
-        logging.error(f"Failed to move data to target: {str(e)}")
-        raise
+        return "SUCCESS"
+
+    
+    @staticmethod
+    def save_dataframe_to_table(
+        df: DataFrame,
+        repartition: str,
+        partition_by: str,
+        location: str,
+        bucket_by: str,
+        num_buckets: str,
+        table_schema: str,
+        table_name: str
+    ) -> None:
+        """Сохраняет DataFrame в таблицу с указанными параметрами"""
+        writer = df.write.format("parquet").mode("overwrite")
+        
+        # Репартиционирование
+        if repartition not in ("0", "_"):
+            parts = [p.strip() for p in repartition.split(",")]
+            if parts[0].isdigit():
+                writer = writer.repartition(int(parts[0]), *[col(p) for p in parts[1:]])
+            else:
+                writer = writer.repartition(*[col(p) for p in parts])
+        
+        # Партиционирование
+        if partition_by != "_":
+            writer = writer.partitionBy(*[p.strip() for p in partition_by.split(",")])
+        
+        # Расположение
+        if location != "_":
+            writer = writer.option("path", location)
+        
+        # Бакетирование
+        if bucket_by != "_":
+            buckets = [b.strip() for b in bucket_by.split(",")]
+            writer = writer.bucketBy(int(num_buckets), buckets[0], *buckets[1:])
+        
+        writer.saveAsTable(f"{table_schema}.{table_name}")
+
+    @staticmethod
+    def get_query(spark: SparkSession, query_path: str, query_mapping: str = "") -> str:
+        """Читает SQL-запрос из файла и применяет подстановки"""
+        resolved_map = TargetTableMover.resolve_mapping(query_mapping)
+        query = spark.read.text(query_path).collect()[0][0]
+        
+        for key, value in resolved_map.items():
+            query = query.replace(f"${{{key}}}", value)
+        
+        TargetTableMover.validate_sql(spark, query)
+        logger.info(f"Resolved query:\n{query}")
+        return query
+
+    
+
+    @staticmethod
+    def execute_query(spark: SparkSession, query: str) -> DataFrame:
+        """Выполняет SQL-запрос и возвращает DataFrame"""
+        logger.info(f"Executing:\n{query}")
+        return spark.sql(query)
+
+    @staticmethod
+    def validate_sql(spark: SparkSession, query: str) -> bool:
+        """Проверяет валидность SQL-запроса"""
+        try:
+            spark.sql(query).explain()
+            return True
+        except Exception as ex:
+            raise RuntimeError(f"SQL validation failed: {str(ex)}")
+
+    @staticmethod
+    def resolve_mapping(query_mapping: str) -> Dict[str, str]:
+        """Разбирает строку с подстановками в словарь"""
+        if not query_mapping.strip():
+            return {}
+        
+        try:
+            return dict(item.split(":") for item in query_mapping.split(";"))
+        except Exception:
+            error_msg = (f"Incorrect queryMapping: '{query_mapping}'. "
+                        "Expected format: 'key1:value1;key2:value2;...;keyN:valueN'")
+            logger.error(error_msg)
+            raise RuntimeError(error_msg)
+
+    @staticmethod
+    def get_table_location(spark: SparkSession, table_schema: str, table_name: str) -> str:
+        """Возвращает расположение таблицы в HDFS"""
+        return (spark
+                .sql(f"describe formatted {table_schema}.{table_name}")
+                .filter("col_name = 'Location'")
+                .select("data_type")
+                .collect()[0][0])
+
+    @staticmethod
+    def truncate_table(spark: SparkSession, table_schema: str, table_name: str) -> None:
+        """Очищает таблицу, удаляя данные из HDFS"""
+        logger.info(f"Truncating {table_schema}.{table_name}")
+        try:
+            location = TargetTableMover.get_table_location(spark, table_schema, table_name)
+            # hdfs_client = InsecureClient("http://namenode:9870")
+            # hdfs_client.delete(location, recursive=True)
+            logger.info(f"Deleted {location}")
+        except Exception as ex:
+            logger.error(f"Could not truncate {table_schema}.{table_name}: {str(ex)}")
+
+    @staticmethod
+    def drop_table(spark: SparkSession, table_schema: str, table_name: str) -> None:
+        """Удаляет таблицу"""
+        drop_stmt = f"drop table if exists {table_schema}.{table_name}"
+        logger.info(f"Executing: {drop_stmt}")
+        spark.sql(drop_stmt)

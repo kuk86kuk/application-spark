@@ -1,6 +1,8 @@
+from application_spark.steps import calc_hist
 from config.spark_session import SparkSessionManager
 from utils.logger import SparkLogger
-from steps.preload import Preload
+from steps import calc_inc, calc_stg, mtp, preload
+from checks import check_inc, check_stg, final_checks
 import argparse
 
 
@@ -22,7 +24,7 @@ def main():
         # Создаем новую сессию для каждой задачи
         spark = spark_manager.start_session()
         print(args.step)
-        hdfs_file_path = "hdfs://namenode:8020/datamarts/DataMart_transaction/ddl/schema.sql"
+        hdfs_file_path = "hdfs://namenode:8020/datamarts/DataMart_transaction1/ddl/schema.sql"
         print(hdfs_file_path)
         file_content = spark.sparkContext.textFile(hdfs_file_path).collect()
         print(file_content)
@@ -31,28 +33,35 @@ def main():
             
         if args.step == 'preload':
             logger.print_step_info("stage_preload")
-
+            preload.run_and_save_sql_hdfs()
 
         elif args.step == 'calc_stg':
             logger.print_step_info("stage_calc_stg")
+            calc_stg.run_and_save_sql_hdfs()
 
         elif args.step == 'check_stg':
             logger.print_step_info("stage_check_stg")
+            check_stg.validate_all()
 
         elif args.step == 'calc_inc':
             logger.print_step_info("stage_calc_inc")
+            calc_inc.run_and_save_sql_hdfs()
           
         elif args.step == 'check_inc':
             logger.print_step_info("stage_check_inc")
+            check_inc.validate_all()
 
         elif args.step == 'MTP':
             logger.print_step_info("stage_MTP")
+            mtp.run_and_save_sql_hdfs()
             
         elif args.step == 'hist':
             logger.print_step_info("stage_hist")
+            calc_hist.run_and_save_sql_hdfs()
             
         elif args.step == 'final_check':
             logger.print_step_info("final_check")
+            final_checks.validate_all()
             
     except Exception as e:
         print(f"Error in task {args.task_id}: {str(e)}")

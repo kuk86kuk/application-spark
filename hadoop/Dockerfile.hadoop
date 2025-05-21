@@ -1,0 +1,23 @@
+FROM debian:buster
+
+# Установка Java, wget, Python
+RUN apt-get update && \
+    apt-get install -y openjdk-11-jdk wget python3 python3-pip && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+ENV JAVA_HOME=/usr/lib/jvm/java-11-openjdk-amd64
+ENV PATH=$JAVA_HOME/bin:$PATH
+
+# Установка Spark
+RUN wget https://archive.apache.org/dist/spark/spark-3.3.0/spark-3.3.0-bin-hadoop3.tgz && \
+    tar -xzf spark-3.3.0-bin-hadoop3.tgz -C /opt && \
+    rm spark-3.3.0-bin-hadoop3.tgz
+ENV SPARK_HOME=/opt/spark-3.3.0-bin-hadoop3
+ENV PATH=$SPARK_HOME/bin:$PATH
+ENV PYSPARK_PYTHON=/usr/bin/python3
+
+# Копирование конфигурационных файлов Hadoop
+RUN mkdir -p /etc/hadoop/conf
+ENV HADOOP_CONF_DIR=/etc/hadoop/conf
+COPY hadoop-conf/core-site.xml $HADOOP_CONF_DIR/core-site.xml
+COPY hadoop-conf/yarn-site.xml $HADOOP_CONF_DIR/yarn-site.xml
