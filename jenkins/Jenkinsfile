@@ -119,75 +119,124 @@ pipeline {
                  // Формируем задачи для DAG
                 def tasksContent = new StringBuilder()
                 def dependencies = []
-                def previousTask = "start"
+                def previousTask = "start_task"
                 
                 expectedStages.each { stageName ->
                     def stageConfig = config.pipeline.stages?.get(stageName)
                     echo "stageConfig ${stageConfig}"
                  
-                     if (stageConfig) {
+                    if (stageConfig) {
         echo "✅ Stage '${stageName}' найден в конфиге: ${stageConfig}"
         
         // Преобразуем параметры в нужный формат
         def params = stageConfig.params ?: [:]
         def sparkArgs = params.collect { key, value ->
-            "'--${key}=${value}'"
+            "${key}='${value}'"
         }.join(",\n        ")
         
         tasksContent.append("""
-    ${stageName} = SparkSubmitOperator(
-        task_id="${stageName}",
-        name="${stageName}",
-        application=common_spark_args['application'],
-        conn_id=common_spark_args['conn_id'],
-        application_args=common_spark_args['application_args'] + [
-            ${sparkArgs}
-        ]
+${stageName} = create_spark_task(
+    task_id="${stageName}",
+    ${sparkArgs}
     )
 """)
                         // Добавляем зависимость
-                        dependencies << "${previousTask} >> ${stageName}"
-                        previousTask = stageName
-                    }
+                dependencies << "${previousTask} >> ${stageName}"
+                previousTask = stageName
+                }
                 
                 }
                 // Финализируем зависимости
-                def dependenciesContent = dependencies.join("\n    ") + " >> final"
+                def dependenciesContent = dependencies.join("\n    ") + " >> end_task"
 
                 // Generate DAG content
                 def dagContent = """from airflow import DAG
-from airflow.providers.apache.spark.operators.spark_submit import SparkSubmitOperator
-from datetime import datetime
+from airflow.operators.bash import BashOperator
+from airflow.operators.dummy import DummyOperator
+from datetime import datetime, timedelta
 
-with DAG(
-    "${dagId}",
-    schedule_interval="${schedule_interval}",
-    start_date=${startDate},
+default_args = {
+    'owner': 'airflow',
+    'depends_on_past': False,
+    'email_on_failure': True,
+    'email_on_retry': True,
+    'retries': 3,
+    'retry_delay': timedelta(minutes=5),
+}
+
+dag = DAG(
+    'spark_full_data_pipeline1111',
+    default_args=default_args,
+    description='Spark pipeline with Hadoop using BashOperator',
+    schedule_interval=None,
+    start_date=datetime(2025, 5, 20),
     catchup=False,
-    tags=["jenkins", "${params.DATAMARTS}"]
-) as dag:
+    tags=['spark', 'prod'],
+    max_active_runs=1,
+)
 
-    common_spark_args = {
-        'application': '${application}', 
-        'conn_id': '${conn_id}',  
-        'application_args': [        
-            '${application_args}'
-        ]
-    }
-
-    start = SparkSubmitOperator(
-        task_id='start',  
-        name='start',     
-        **common_spark_args
+def create_spark_task(
+    task_id: str,
+    env: str,
+    step_name: str,
+    query_mapping: str = "source:default",
+    datamart: str = "default",
+    query_path: str = "hdfs://namenode:8020/default/query.sql",
+    table_schema: str = "default",
+    table_name: str = "default_table",
+    repartition: str = "40",
+    partition_by: str = "none",
+    bucket_by: str = "none",
+    num_buckets: str = "1",
+    location: str = "hdfs://namenode:8020/user/jenkins/data",
+    do_truncate_table: str = "false",
+    do_drop_table: str = "false",
+    do_msck_repair_table: str = "false",
+    temp_view_name: str = "default_view",
+    cache_df: str = "false"
+):
+    
+    bash_command = f\"\"\"
+    export HADOOP_CONF_DIR=/opt/hadoop-conf && \
+    docker exec hadoop-namenode-1 /opt/spark-bin/bin/spark-submit \
+      --master yarn \
+      --deploy-mode client \
+      --conf spark.pyspark.python=/usr/bin/python3.8 \
+      --conf spark.yarn.resourcemanager.hostname=resourcemanager \
+      --conf spark.yarn.resourcemanager.address=resourcemanager:8032 \
+      --conf spark.yarn.resourcemanager.scheduler.address=resourcemanager:8030 \
+      --conf spark.hadoop.dfs.client.use.datanode.hostname=true \
+      --py-files hdfs://namenode:8020/user/jenkins/application_spark/dependencies.zip \
+      hdfs://namenode:8020/user/jenkins/application_spark/app.py \
+      --env {env} \
+      --step {step_name} \
+      --task-id {task_id} \
+      --query_mapping {query_mapping} \
+      --datamart {datamart} \
+      --query_path {query_path} \
+      --table_schema {table_schema} \
+      --table_name {table_name} \
+      --repartition {repartition} \
+      --partition_by {partition_by} \
+      --bucket_by {bucket_by} \
+      --num_buckets {num_buckets} \
+      --location {location} \
+      --do_truncate_table {do_truncate_table} \
+      --do_drop_table {do_drop_table} \
+      --do_msck_repair_table {do_msck_repair_table} \
+      --temp_view_name {temp_view_name} \
+      --cache_df {cache_df}
+    \"\"\"
+    return BashOperator(
+        task_id=f'spark_{task_id}',
+        bash_command=bash_command,
+        dag=dag,
     )
+
+start_task = DummyOperator(task_id='start_pipeline', dag=dag)
+end_task = DummyOperator(task_id='end_pipeline', dag=dag)
     
     ${tasksContent.toString()}
-
-    final = SparkSubmitOperator(
-        task_id='final',  
-        name='final',     
-        **common_spark_args
-    )
 
     ${dependenciesContent}
 """

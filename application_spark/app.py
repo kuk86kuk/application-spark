@@ -19,20 +19,11 @@ def main():
     logger.print_header()
 
 
-    try:
-        # Создаем новую сессию для каждой задачи
-        spark = spark_manager.start_session()
-        print(args.step)
-        hdfs_file_path = "hdfs://namenode:8020/datamarts/DataMart_transaction1/ddl/schema.sql"
-        print(hdfs_file_path)
-        file_content = spark.sparkContext.textFile(hdfs_file_path).collect()
-        print(file_content)
-        for line in file_content:
-            print(line)
-            
-        # if args.step == 'preload':
-        #     logger.print_step_info("stage_preload")
-        #     preload.run_and_save_sql_hdfs()
+    try: 
+        print(args.step)   
+        if args.step == 'preload':
+            logger.print_step_info("stage_preload")
+            preload.run_and_save_sql_hdfs()
 
         # elif args.step == 'calc_stg':
         #     logger.print_step_info("stage_calc_stg")
