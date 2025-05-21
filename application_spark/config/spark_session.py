@@ -9,7 +9,7 @@ class SparkSessionManager:
     @staticmethod
     def get_spark_config(task_id=None):
         config = {
-            "app_name": f"MySparkApp_{task_id}" if task_id else "MySparkApp",
+            "app_name": f"{task_id}",
             "master": "yarn",
             "spark_configs": {
                 "spark.executor.memory": "1g",

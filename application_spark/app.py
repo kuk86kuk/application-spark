@@ -1,7 +1,10 @@
 from config.spark_session import SparkSessionManager
 from utils.logger import SparkLogger
 from steps.preload import Preload
-from steps import calc_inc, calc_stg, mtp
+from steps.calc_stg import Calc_stg
+from steps.calc_inc import Calc_inc
+from steps.calc_hist import Calc_hist
+from steps.mtp import TargetTableMover
 from checks import check_inc, check_stg, final_checks
 import argparse
 
@@ -40,29 +43,85 @@ def main():
                                             args.temp_view_name,
                                             args.cache_df)
 
-        # elif args.step == 'calc_stg':
-        #     logger.print_step_info("stage_calc_stg")
-        #     calc_stg.run_and_save_sql_hdfs()
+        elif args.step == 'calc_stg':
+            logger.print_step_info("stage_calc_stg")
+            Calc_stg.run_and_save_sql_hdfs(spark, 
+                                            args.query_path,
+                                            args.query_mapping,
+                                            args.table_schema,
+                                            args.table_name,
+                                            args.repartition,
+                                            args.partition_by,
+                                            args.bucket_by,
+                                            args.num_buckets,
+                                            args.location,
+                                            args.do_truncate_table,
+                                            args.do_drop_table,
+                                            args.do_msck_repair_table,
+                                            args.temp_view_name,
+                                            args.cache_df)
 
         # elif args.step == 'check_stg':
         #     logger.print_step_info("stage_check_stg")
         #     check_stg.validate_all()
 
-        # elif args.step == 'calc_inc':
-        #     logger.print_step_info("stage_calc_inc")
-        #     calc_inc.run_and_save_sql_hdfs()
+        elif args.step == 'calc_inc':
+            logger.print_step_info("stage_calc_inc")
+            Calc_inc.run_and_save_sql_hdfs(spark, 
+                                            args.query_path,
+                                            args.query_mapping,
+                                            args.table_schema,
+                                            args.table_name,
+                                            args.repartition,
+                                            args.partition_by,
+                                            args.bucket_by,
+                                            args.num_buckets,
+                                            args.location,
+                                            args.do_truncate_table,
+                                            args.do_drop_table,
+                                            args.do_msck_repair_table,
+                                            args.temp_view_name,
+                                            args.cache_df)
           
         # elif args.step == 'check_inc':
         #     logger.print_step_info("stage_check_inc")
         #     check_inc.validate_all()
 
-        # elif args.step == 'MTP':
-        #     logger.print_step_info("stage_MTP")
-        #     mtp.run_and_save_sql_hdfs()
+        elif args.step == 'MTP':
+            logger.print_step_info("stage_MTP")
+            TargetTableMover.run_and_save_sql_hdfs(spark, 
+                                            args.query_path,
+                                            args.query_mapping,
+                                            args.table_schema,
+                                            args.table_name,
+                                            args.repartition,
+                                            args.partition_by,
+                                            args.bucket_by,
+                                            args.num_buckets,
+                                            args.location,
+                                            args.do_truncate_table,
+                                            args.do_drop_table,
+                                            args.do_msck_repair_table,
+                                            args.temp_view_name,
+                                            args.cache_df)
             
-        # elif args.step == 'hist':
-        #     logger.print_step_info("stage_hist")
-        #     calc_hist.run_and_save_sql_hdfs()
+        elif args.step == 'hist':
+            logger.print_step_info("stage_hist")
+            Calc_hist.run_and_save_sql_hdfs(spark, 
+                                            args.query_path,
+                                            args.query_mapping,
+                                            args.table_schema,
+                                            args.table_name,
+                                            args.repartition,
+                                            args.partition_by,
+                                            args.bucket_by,
+                                            args.num_buckets,
+                                            args.location,
+                                            args.do_truncate_table,
+                                            args.do_drop_table,
+                                            args.do_msck_repair_table,
+                                            args.temp_view_name,
+                                            args.cache_df)
             
         # elif args.step == 'final_check':
         #     logger.print_step_info("final_check")
