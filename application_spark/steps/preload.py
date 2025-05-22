@@ -111,7 +111,7 @@ class Preload:
         """Выполняет SQL-запрос и возвращает DataFrame"""
         
         logger.info(f"Executing:\n{query}")
-        query = spark.read.text(query).collect()
+        query = spark.read.text(query)
         print(query)
         return spark.sql(query)
 
