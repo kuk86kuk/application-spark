@@ -111,9 +111,6 @@ class CheckStg:
 
     @staticmethod
     def validate_all(
-        self,
-        checks: Dict[str, Union[Dict, List]],
-        critical_checks: List[str] = None
     ) -> bool:
         """
         Запускает все проверки. Формат checks:
