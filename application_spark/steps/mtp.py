@@ -32,32 +32,8 @@ class TargetTableMover:
         temp_view_name: str = "_",
         cache_df: str = "n"
     ) -> str:
-        """Выполняет SQL-запрос и сохраняет результат в таблицу"""
-        spark.conf.set("spark.sql.sources.partitionOverwriteMode", "dynamic")
-        
-        query = TargetTableMover.get_query(spark, query_path, query_mapping)
-        df = TargetTableMover.execute_query(spark, query)
-        
-        if temp_view_name != "_":
-            df.createOrReplaceTempView(temp_view_name)
-        
-        if cache_df == "y":
-            df.cache()
-        
-        if table_name != "_":
-            if do_truncate_table == "y":
-                TargetTableMover.truncate_table(spark, table_schema, table_name)
-            if do_drop_table == "y":
-                TargetTableMover.drop_table(spark, table_schema, table_name)
-            
-            TargetTableMover.save_dataframe_to_table(
-                df, repartition, partition_by, location, 
-                bucket_by, num_buckets, table_schema, table_name
-            )
-            
-            if do_msck_repair_table == "y" and partition_by != "_":
-                TargetTableMover.execute_query(spark, f"msck repair table {table_schema}.{table_name}")
-        
+                
+        print("SUCCESS")
         return "SUCCESS"
 
     

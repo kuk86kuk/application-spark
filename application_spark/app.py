@@ -22,11 +22,8 @@ def main():
     logger = SparkLogger(env=args.env, step_name=args.step)
     logger.print_header()
 
-    spark.sql("SELECT 1 AS number").show()
-    spark.sql("show databases").show()
-    spark.sql("CREATE DATABASE IF NOT EXISTS DataMart_transaction").show()
+
     try: 
-        print(args.step)   
         if args.step == 'stage_preload':
             logger.print_step_info("stage_preload")
             Preload.run_and_save_sql_hdfs(spark, 
@@ -63,9 +60,9 @@ def main():
                                             args.temp_view_name,
                                             args.cache_df)
 
-        # elif args.step == 'stage_check_stg':
-        #     logger.print_step_info("stage_check_stg")
-        #     check_stg.validate_all()
+        elif args.step == 'stage_check_stg':
+            logger.print_step_info("stage_check_stg")
+            check_stg.validate_all()
 
         elif args.step == 'stage_calc_inc':
             logger.print_step_info("stage_calc_inc")
@@ -85,9 +82,9 @@ def main():
                                             args.temp_view_name,
                                             args.cache_df)
           
-        # elif args.step == 'stage_check_inc':
-        #     logger.print_step_info("stage_check_inc")
-        #     check_inc.validate_all()
+        elif args.step == 'stage_check_inc':
+            logger.print_step_info("stage_check_inc")
+            check_inc.validate_all()
 
         elif args.step == 'stage_MTP':
             logger.print_step_info("stage_MTP")
@@ -125,9 +122,9 @@ def main():
                                             args.temp_view_name,
                                             args.cache_df)
             
-        # elif args.step == 'stage_final_check':
-        #     logger.print_step_info("final_check")
-        #     final_checks.validate_all()
+        elif args.step == 'stage_final_check':
+            logger.print_step_info("final_check")
+            final_checks.validate_all()
             
     except Exception as e:
         print(f"Error in task {args.task_id}: {str(e)}")
