@@ -34,7 +34,7 @@ class Preload:
     ) -> str:
         # """Выполняет SQL-запрос и сохраняет результат в таблицу"""
         # spark.conf.set("spark.sql.sources.partitionOverwriteMode", "dynamic")
-        
+        spark.sql("SELECT 1 AS number").show()
         # query = Preload.get_query(spark, query_path, query_mapping)
         # df = Preload.execute_query(spark, query)
         

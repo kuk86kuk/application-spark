@@ -132,11 +132,11 @@ pipeline {
         def params = stageConfig.params ?: [:]
         def sparkArgs = params.collect { key, value ->
             "${key}='${value}'"
-        }.join(",\n        ")
-        
+        }.join(",\n    ")
+        def task_id = "${dagId}" + "${stageName}"
         tasksContent.append("""
 ${stageName} = create_spark_task(
-    task_id="${stageName}",
+    task_id="${task_id}",
     ${sparkArgs}
     )
 """)
@@ -147,7 +147,7 @@ ${stageName} = create_spark_task(
                 
                 }
                 // Финализируем зависимости
-                def dependenciesContent = dependencies.join("\n    ") + " >> end_task"
+                def dependenciesContent = dependencies.join("\n") + " >> end_task"
 
                 // Generate DAG content
                 def dagContent = """from airflow import DAG
@@ -165,7 +165,7 @@ default_args = {
 }
 
 dag = DAG(
-    'spark_full_data_pipeline1111',
+    '${dagId}',
     default_args=default_args,
     description='Spark pipeline with Hadoop using BashOperator',
     schedule_interval=None,
@@ -177,8 +177,6 @@ dag = DAG(
 
 def create_spark_task(
     task_id: str,
-    env: str,
-    step_name: str,
     query_mapping: str = "source:default",
     datamart: str = "default",
     query_path: str = "hdfs://namenode:8020/default/query.sql",
@@ -208,8 +206,8 @@ def create_spark_task(
       --conf spark.hadoop.dfs.client.use.datanode.hostname=true \
       --py-files hdfs://namenode:8020/user/jenkins/application_spark/dependencies.zip \
       hdfs://namenode:8020/user/jenkins/application_spark/app.py \
-      --env {env} \
-      --step {step_name} \
+      --env TEST \
+      --step {task_id} \
       --task-id {task_id} \
       --query_mapping {query_mapping} \
       --datamart {datamart} \
@@ -236,9 +234,9 @@ def create_spark_task(
 start_task = DummyOperator(task_id='start_pipeline', dag=dag)
 end_task = DummyOperator(task_id='end_pipeline', dag=dag)
     
-    ${tasksContent.toString()}
+${tasksContent.toString()}
 
-    ${dependenciesContent}
+${dependenciesContent}
 """
                 
                 // Write DAG file
