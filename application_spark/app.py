@@ -5,6 +5,10 @@ from steps.calc_stg import Calc_stg
 from steps.calc_inc import Calc_inc
 from steps.calc_hist import Calc_hist
 from steps.mtp import TargetTableMover
+
+from checks.check_inc import CheckInc
+from checks.check_stg import CheckStg
+from checks.final_checks import FinalChecks
 from checks import check_inc, check_stg, final_checks
 import argparse
 
@@ -62,7 +66,7 @@ def main():
 
         elif args.step == 'stage_check_stg':
             logger.print_step_info("stage_check_stg")
-            check_stg.validate_all()
+            CheckStg.validate_all()
 
         elif args.step == 'stage_calc_inc':
             logger.print_step_info("stage_calc_inc")
@@ -84,7 +88,7 @@ def main():
           
         elif args.step == 'stage_check_inc':
             logger.print_step_info("stage_check_inc")
-            check_inc.validate_all()
+            CheckInc.validate_all()
 
         elif args.step == 'stage_MTP':
             logger.print_step_info("stage_MTP")
@@ -124,7 +128,7 @@ def main():
             
         elif args.step == 'stage_final_check':
             logger.print_step_info("final_check")
-            final_checks.validate_all()
+            FinalChecks.validate_all()
             
     except Exception as e:
         print(f"Error in task {args.task_id}: {str(e)}")
