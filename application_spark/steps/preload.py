@@ -33,30 +33,30 @@ class Preload:
         cache_df: str = "n"
     ) -> str:
         # """Выполняет SQL-запрос и сохраняет результат в таблицу"""
-        # spark.conf.set("spark.sql.sources.partitionOverwriteMode", "dynamic")
-        spark.sql("SELECT 1 AS number").show()
-        # query = Preload.get_query(spark, query_path, query_mapping)
-        # df = Preload.execute_query(spark, query)
+        spark.conf.set("spark.sql.sources.partitionOverwriteMode", "dynamic")
         
-        # if temp_view_name != "_":
-        #     df.createOrReplaceTempView(temp_view_name)
+        query = Preload.get_query(spark, query_path, query_mapping)
+        df = Preload.execute_query(spark, query)
         
-        # if cache_df == "y":
-        #     df.cache()
+        if temp_view_name != "_":
+            df.createOrReplaceTempView(temp_view_name)
         
-        # if table_name != "_":
-        #     if do_truncate_table == "y":
-        #         Preload.truncate_table(spark, table_schema, table_name)
-        #     if do_drop_table == "y":
-        #         Preload.drop_table(spark, table_schema, table_name)
+        if cache_df == "y":
+            df.cache()
+        
+        if table_name != "_":
+            if do_truncate_table == "y":
+                Preload.truncate_table(spark, table_schema, table_name)
+            if do_drop_table == "y":
+                Preload.drop_table(spark, table_schema, table_name)
             
-        #     Preload.save_dataframe_to_table(
-        #         df, repartition, partition_by, location, 
-        #         bucket_by, num_buckets, table_schema, table_name
-        #     )
+            Preload.save_dataframe_to_table(
+                df, repartition, partition_by, location, 
+                bucket_by, num_buckets, table_schema, table_name
+            )
             
-        #     if do_msck_repair_table == "y" and partition_by != "_":
-        #         Preload.execute_query(spark, f"msck repair table {table_schema}.{table_name}")
+            if do_msck_repair_table == "y" and partition_by != "_":
+                Preload.execute_query(spark, f"msck repair table {table_schema}.{table_name}")
         print("SUCCESS")
         return "SUCCESS"
 

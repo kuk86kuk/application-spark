@@ -133,10 +133,11 @@ pipeline {
         def sparkArgs = params.collect { key, value ->
             "${key}='${value}'"
         }.join(",\n    ")
-        def task_id = "${dagId}" + "${stageName}"
+        def task_id = "${dagId}" +  "_" + "${stageName}"
         tasksContent.append("""
 ${stageName} = create_spark_task(
     task_id="${task_id}",
+    step="${stageName}",
     ${sparkArgs}
     )
 """)
@@ -177,6 +178,7 @@ dag = DAG(
 
 def create_spark_task(
     task_id: str,
+    step: str,
     query_mapping: str = "source:default",
     datamart: str = "default",
     query_path: str = "hdfs://namenode:8020/default/query.sql",
@@ -207,7 +209,7 @@ def create_spark_task(
       --py-files hdfs://namenode:8020/user/jenkins/application_spark/dependencies.zip \
       hdfs://namenode:8020/user/jenkins/application_spark/app.py \
       --env TEST \
-      --step {task_id} \
+      --step {step} \
       --task-id {task_id} \
       --query_mapping {query_mapping} \
       --datamart {datamart} \
