@@ -35,14 +35,7 @@ class Preload:
         # """Выполняет SQL-запрос и сохраняет результат в таблицу"""
         spark.conf.set("spark.sql.sources.partitionOverwriteMode", "dynamic")
         
-        query = Preload.get_query(spark, query_path, query_mapping)
-        df = Preload.execute_query(spark, query)
-        
-        if temp_view_name != "_":
-            df.createOrReplaceTempView(temp_view_name)
-        
-        if cache_df == "y":
-            df.cache()
+        df = Preload.execute_query(spark, query_path)
         
         if table_name != "_":
             if do_truncate_table == "y":
