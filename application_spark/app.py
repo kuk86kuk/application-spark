@@ -22,7 +22,9 @@ def main():
     logger = SparkLogger(env=args.env, step_name=args.step)
     logger.print_header()
 
-
+    spark.sql("SELECT 1 AS number").show()
+    spark.sql("show databases").show()
+    spark.sql("CREATE DATABASE IF NOT EXISTS DataMart_transaction").show()
     try: 
         print(args.step)   
         if args.step == 'stage_preload':
