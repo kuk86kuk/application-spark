@@ -35,7 +35,6 @@ class Preload:
         # """Выполняет SQL-запрос и сохраняет результат в таблицу"""
         spark.conf.set("spark.sql.sources.partitionOverwriteMode", "dynamic")
         
-        query = Preload.get_query(spark, query_path, query_mapping)
         df = Preload.execute_query(spark, query_path)
         
         if table_name != "_":
@@ -113,6 +112,7 @@ class Preload:
         
         logger.info(f"Executing:\n{query}")
         query = spark.read.text(query).collect()
+        print(query)
         return spark.sql(query)
 
     @staticmethod
